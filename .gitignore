@@ -1,2 +1,5 @@
 *.pyc
 env/
+build/
+dist/
+hyperdash.egg-info/
