@@ -5,10 +5,10 @@ import logging
 import sys
 import time
 
-from code_runner import CodeRunner
-from hyper_dash import HyperDash
-from io_buffer import IOBuffer
-from server_manager import ServerManager
+from .code_runner import CodeRunner
+from .hyper_dash import HyperDash
+from .io_buffer import IOBuffer
+from .server_manager import ServerManager
 
 
 # TODO: We should probably spawn a separate process instead of using a thread
@@ -61,29 +61,3 @@ def monitor(job_name, api_key_getter=None):
                 sys.stdout, sys.stderr = old_out, old_err
         return monitored
     return _monitor
-
-
-# Notice that all the user has to do is add the @monitor decorator
-# with an appropriate API key, and optionally add the smart_ml
-# argument to their function signature (if they want to use features
-# other than viewing print statements and starting/stopping their jobs.)
-@monitor(job_name="the_donald")
-def main(model_name, epoch_duration, hyperdash=None):
-    print("Training model: {}".format(model_name))
-    print("Retrieving model parameters from remote server...")
-    time.sleep(2)
-
-    num_epochs = hyperdash.get_param("num_epochs", 5)
-    print("Retrieved {} num_epochs from server.".format(num_epochs))
-    for i in range(num_epochs):
-        print("Beginning epoch {}".format(i))
-        time.sleep(epoch_duration)
-        print("Epoch {} completed. Accuracy: {}%".format(i, 25+i*25))
-        if i == 0:
-            print("Sample output: 'Murica'")
-        if i == 1:
-            print("Sample output: 'Make America Great Again!'")
-        if i == 2:
-            print("And I told them, we have the most tremendous country. America is gonna be yuge again.")
-
-main("trump_bot", 5)

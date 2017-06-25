@@ -1,10 +1,11 @@
 # Python 2/3 compatibility
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+from inspect import getargspec
 import logging
 from threading import Lock
 
-from smart_ml import SmartML
+from .smart_ml import SmartML
 
 
 # Python 2/3 compatibility
@@ -20,13 +21,18 @@ class CodeRunner:
         self.logger = logging.getLogger("hyperdash.{}".format(__name__))
 
     def wrap(self, f, *args, **kwargs):
-        # TODO: Inject me or something
-        kwargs["hyperdash"] = SmartML()
+        arg_spec = getargspec(f)
+        # Make sure function signature can handle injected hyperdash object
+        if 'hyperdash' in arg_spec.args or arg_spec.keywords:
+            # TODO: Inject in constructor instead of instantiating here
+            kwargs["hyperdash"] = SmartML()
 
         def wrapped():
             # TODO: Error handling
             try:
                 f(*args, **kwargs)
+            except Exception as e:
+                self.logger.error(str(e))
             finally:
                 with self.lock:
                     self.done = True

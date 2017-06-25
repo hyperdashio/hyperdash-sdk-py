@@ -57,6 +57,3 @@ def main():
     signup_parser.set_defaults(func=signup)
     args = parser.parse_args()
     args.func()
-
-
-main()
