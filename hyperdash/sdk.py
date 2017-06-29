@@ -45,6 +45,7 @@ def monitor(job_name, api_key_getter=None):
             try:
                 code_runner = CodeRunner(f, *args, **kwargs)
                 hyper_dash = HyperDash(
+                    job_name,
                     code_runner,
                     server_manager,
                     out,

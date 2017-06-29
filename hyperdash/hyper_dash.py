@@ -11,6 +11,9 @@ import uuid
 __metaclass__ = type
 
 TYPE_LOG = 'log'
+TYPE_STARTED = 'run_started'
+TYPE_ENDED = 'run_ended'
+
 INFO_LEVEL = 'INFO'
 ERROR_LEVEL = 'ERROR'
 
@@ -25,6 +28,7 @@ class HyperDash:
 
     def __init__(
         self,
+        job_name,
         code_runner,
         server_manager,
         io_bufs,
@@ -34,12 +38,14 @@ class HyperDash:
         """Initialize the HyperDash class.
 
         args:
-            1) code_runner: Instance of CodeRunner
-            2) server_manager: Instance of ServerManager
-            3) io_bufs: Tuple in the form of (StringIO(), StringIO(),)
-            4) std_streams: Tuple in the form of (StdOut, StdErr)
-            5) get_api_key: Optional function which when called returns an API key as a string
+            1) job_name: Name of the current running job
+            2) code_runner: Instance of CodeRunner
+            3) server_manager: Instance of ServerManager
+            4) io_bufs: Tuple in the form of (StringIO(), StringIO(),)
+            5) std_streams: Tuple in the form of (StdOut, StdErr)
+            6) custom_api_key_getter: Optional function which when called returns an API key as a string
         """
+        self.job_name = job_name
         self.code_runner = code_runner
         self.server_manager = server_manager
         self.out_buf, self.err_buf = io_bufs
@@ -48,6 +54,9 @@ class HyperDash:
         # Used to keep track of the current position in the IO buffers
         self.out_buf_offset = 0
         self.err_buf_offset = 0
+
+        # SDK-generated run UUID
+        self.current_sdk_run_uuid = None
 
         # TODO: Support file
         self.logger = logging.getLogger("hyperdash.{}".format(__name__))
@@ -79,17 +88,26 @@ class HyperDash:
         return self.create_sdk_message(
             TYPE_LOG,
             {
-                'timestamp': int(time.time()),
                 'uuid': str(uuid.uuid4()),
                 'level': level,
                 'body': body,
             }
         )
 
+    def create_run_started_message(self):
+        return self.create_sdk_message(
+            TYPE_STARTED,
+            {
+                'job_name': self.job_name,
+            },
+        )
+
     def create_sdk_message(self, typeStr, payload):
         """Create a structured message for the server."""
         return json.dumps({
             'type': typeStr,
+            'timestamp': int(time.time()),
+            'sdk_run_uuid': self.current_sdk_run_uuid,
             'payload': payload,
         })
 
@@ -97,8 +115,15 @@ class HyperDash:
         self.server_manager.cleanup()
 
     def run(self):
+        # Create a UUID to uniquely identify this run from the SDK's point of view
+        self.current_sdk_run_uuid = str(uuid.uuid4())
+        # Notify the server that a new run has started
+        self.server_manager.put_buf(self.create_run_started_message())
+
+        # Start running the user's code
         code_thread = Thread(target=self.code_runner.run)
         code_thread.start()
+
         try:
             # Event-loop
             while True:
