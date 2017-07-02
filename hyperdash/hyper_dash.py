@@ -7,6 +7,12 @@ import logging
 import time
 import uuid
 
+from twisted.internet import reactor
+from twisted.internet.task import LoopingCall
+from autobahn.twisted.wamp import ApplicationSession, ApplicationRunner
+from twisted.internet.defer import inlineCallbacks
+
+
 # Python 2/3 compatibility
 __metaclass__ = type
 
@@ -30,7 +36,7 @@ class HyperDash:
         self,
         job_name,
         code_runner,
-        server_manager,
+        server_manager_class,
         io_bufs,
         std_streams,
         custom_api_key_getter=None,
@@ -40,16 +46,18 @@ class HyperDash:
         args:
             1) job_name: Name of the current running job
             2) code_runner: Instance of CodeRunner
-            3) server_manager: Instance of ServerManager
-            4) io_bufs: Tuple in the form of (StringIO(), StringIO(),)
-            5) std_streams: Tuple in the form of (StdOut, StdErr)
-            6) custom_api_key_getter: Optional function which when called returns an API key as a string
+            4) server_manager_class: Server manager class
+            5) io_bufs: Tuple in the form of (StringIO(), StringIO(),)
+            6) std_streams: Tuple in the form of (StdOut, StdErr)
+            7) custom_api_key_getter: Optional function which when called returns an API key as a string
         """
         self.job_name = job_name
         self.code_runner = code_runner
-        self.server_manager = server_manager
+        self.server_manager_instance = server_manager_class()
+        self.server_manager_class = server_manager_class
         self.out_buf, self.err_buf = io_bufs
         self.std_out, self.std_err = std_streams
+        self.custom_api_key_getter = custom_api_key_getter
 
         # Used to keep track of the current position in the IO buffers
         self.out_buf_offset = 0
@@ -76,13 +84,14 @@ class HyperDash:
 
     def print_out(self, s):
         message = self.create_log_message(INFO_LEVEL, s)
-        self.server_manager.put_buf(message)
-        print(s, file=self.std_out)
+        # TODO: may not be available yet
+        self.server_manager_instance.put_buf(message)
+        self.std_out.write(s)
 
     def print_err(self, s):
         message = self.create_log_message(ERROR_LEVEL, s)
-        self.server_manager.put_buf(message)
-        print(s, file=self.std_err)
+        self.server_manager_instance.put_buf(message)
+        self.std_err.write(s)
 
     def create_log_message(self, level, body):
         return self.create_sdk_message(
@@ -111,31 +120,38 @@ class HyperDash:
             'payload': payload,
         })
 
+    @inlineCallbacks
     def cleanup(self):
-        self.server_manager.cleanup()
+        yield self.server_manager_instance.cleanup()
+        reactor.stop()
 
     def run(self):
         # Create a UUID to uniquely identify this run from the SDK's point of view
         self.current_sdk_run_uuid = str(uuid.uuid4())
-        # Notify the server that a new run has started
-        self.server_manager.put_buf(self.create_run_started_message())
+        self.server_manager_instance.custom_init(self.custom_api_key_getter)
 
-        # Start running the user's code
-        code_thread = Thread(target=self.code_runner.run)
-        code_thread.start()
+        def user_thread():
+            # Prep the user-code thread
+            code_thread = Thread(target=self.code_runner.run)
+            code_thread.daemon = True
+            code_thread.start()
 
-        try:
-            # Event-loop
-            while True:
+        reactor.callInThread(user_thread)
+
+        @inlineCallbacks
+        def event_loop():
+            try:
                 self.capture_io()
-                self.server_manager.tick()
+                yield self.server_manager_instance.tick()
                 if self.code_runner.is_done():
-                    self.cleanup()
+                    yield self.cleanup()
                     return
-                # TODO: Make sleep decision based on time since last
-                # tick
-                time.sleep(1)
-        except Exception as e:
-            self.print_out(e)
-            self.print_err(e)
-            return e
+            except Exception as e:
+                self.print_out(e)
+                self.print_err(e)
+                yield self.cleanup()
+                # TODO: When we switch to multiprocessing, kill the code process here
+                raise
+
+        LoopingCall(event_loop).start(2)
+        reactor.run()

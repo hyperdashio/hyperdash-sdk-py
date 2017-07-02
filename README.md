@@ -52,3 +52,4 @@ TODO
 - StringIO buffers and unicode
 - Maximum log size + truncate old logs
 - Local log files
+- Support recursive functions
