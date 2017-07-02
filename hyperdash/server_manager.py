@@ -5,19 +5,16 @@ import json
 import logging
 import os
 import sys
-import time
 
 from collections import deque
 
 from autobahn.twisted.wamp import Session
 from autobahn.twisted.wamp import ApplicationRunner
 
+from twisted.internet import reactor, threads
 from twisted.internet.defer import inlineCallbacks, returnValue
 
-from ws4py.client.threadedclient import WebSocketClient
-from ws4py.exc import HandshakeError
-
-from twisted.internet import reactor, threads
+from .constants import AUTH_HEADER_KEY, get_wamp_url, WAMP_REALM
 
 
 # Python 2/3 compatibility
@@ -53,13 +50,17 @@ class ServerManager(Borg, Session):
         self.unauthorized = False
 
     def onClose(self, wasClean, code=None, reason=None):
-        if reason and '401' in reason:
+        if reason and "401" in reason:
             self.unauthorized = True
             # Prevent auto-reconnect from trying forever
             self.application_runner.stop()
 
             api_key = self.get_api_key()
             self.log_error_once("Invalid API key: {}".format(api_key))
+        elif not wasClean:
+            self.log_error_once(
+                "Connection to Hyperdash servers terminated: {}".format(reason),
+            )
 
     def received_message(self, m):
         self.in_buf.append(m)
@@ -82,7 +83,7 @@ class ServerManager(Borg, Session):
                 returnValue(True)
 
             try:
-                yield self.call(u'sdk.sendMessage', message)
+                yield self.call(u"sdk.sendMessage", message)
             # Poison-pill, drop it
             except ValueError:
                 self.logger.debug("Invalid websocket message")
@@ -166,9 +167,9 @@ class ServerManager(Borg, Session):
         self.unauthorized = False
 
         self.application_runner = ApplicationRunner(
-            url=u"ws://127.0.0.1:4000/api/websocket",
-            realm=u"hyperdash.sdk",
-            headers={"x-hyperdash-auth": "some_api_key"},
+            url=get_wamp_url(),
+            realm=WAMP_REALM,
+            headers={AUTH_HEADER_KEY: self.get_api_key()},
         )
         self.application_runner_deferred = self.application_runner.run(
             ServerManager,
