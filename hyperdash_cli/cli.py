@@ -45,7 +45,7 @@ def get_input(prompt, sensitive=False):
 
 def post_json(data):
     return urlopen(
-        "{}/api/users".format(get_base_url()),
+        "{}/api/v1/users".format(get_base_url()),
         bytes(json.dumps(data).encode('utf8')),
     )
 
