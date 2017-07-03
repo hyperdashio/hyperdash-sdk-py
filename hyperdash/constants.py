@@ -1,7 +1,7 @@
 import os
 
 
-AUTH_HEADER_KEY = "x-hyperdash-auth"
+AUTH_KEY_NAME = "x-hyperdash-auth"
 WAMP_ENDPOINT = "/api/v1/sdk/wamp"
 WAMP_REALM = u"hyperdash.v1.sdk"
 

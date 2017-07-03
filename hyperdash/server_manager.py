@@ -16,7 +16,7 @@ from autobahn.wamp.types import CallOptions
 from twisted.internet import reactor, threads
 from twisted.internet.defer import inlineCallbacks, returnValue
 
-from .constants import AUTH_HEADER_KEY, get_wamp_url, WAMP_REALM
+from .constants import AUTH_KEY_NAME, get_wamp_url, WAMP_REALM
 
 
 # Python 2/3 compatibility
@@ -86,11 +86,10 @@ class ServerManager(Borg, Session):
 
             try:
                 # TODO: Send multiple messages at once
-                yield self.call(
-                    u"sdk.sendMessage",
-                    message,
-                    hyperdash_api_key=self.get_api_key(),
-                )
+                kwargs = {
+                    AUTH_KEY_NAME: self.get_api_key(),
+                }
+                yield self.call(u"sdk.sendMessage", message, **kwargs)
             # Poison-pill, drop it
             except ValueError:
                 self.logger.debug("Invalid websocket message")
@@ -193,7 +192,7 @@ class ServerManager(Borg, Session):
         self.application_runner = ApplicationRunner(
             url=get_wamp_url(),
             realm=WAMP_REALM,
-            headers={AUTH_HEADER_KEY: self.get_api_key()},
+            headers={AUTH_KEY_NAME: self.get_api_key()},
         )
         self.application_runner_deferred = self.application_runner.run(
             ServerManager,
