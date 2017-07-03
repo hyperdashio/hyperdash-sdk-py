@@ -1,4 +1,5 @@
 import argparse
+from getpass import getpass
 import json
 
 from six.moves.urllib.parse import urlencode
@@ -7,10 +8,11 @@ from six.moves import input
 
 from .constants import get_base_url
 
+
 def signup():
     email = get_input("Email address (must be valid):")
     company = get_input("Company:")
-    password = get_input("Password (must be at least 8 characters):")
+    password = get_input("Password (must be at least 8 characters):", True)
 
     print("Trying to sign you up now...")
     try:
@@ -35,9 +37,10 @@ def signup():
     print("Your API key is: {}".format(response_body['api_key']))
 
 
-def get_input(display):
-    print(display)
-    return input()
+def get_input(prompt, sensitive=False):
+    if sensitive:
+        return getpass(prompt)
+    return input(prompt)
 
 
 def post_json(data):

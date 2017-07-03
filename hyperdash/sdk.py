@@ -17,7 +17,7 @@ from .server_manager import ServerManager
 # TODO: I think StringIO buffers don't handle unicode properly. Investigate.
 
 
-def monitor(job_name, api_key_getter=None):
+def monitor(model_name, api_key_getter=None):
 
     def _monitor(f):
         # Buffers to which to redirect output so we can capture it
@@ -49,7 +49,7 @@ def monitor(job_name, api_key_getter=None):
             try:
                 code_runner = CodeRunner(f, *args, **kwargs)
                 hyper_dash = HyperDash(
-                    job_name,
+                    model_name,
                     code_runner,
                     ServerManager,
                     out,
