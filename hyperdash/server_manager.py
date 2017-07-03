@@ -108,15 +108,11 @@ class ServerManager(Borg, Session):
                             e.error_message(),
                         ),
                     )
-                    self.logger.debug("Error sending WAMP message")
 
                 # Re-enque so message is not lost
                 self.out_buf.appendleft(message)
                 returnValue(False)
-            except Exception as e:
-                print(e)
-                import traceback
-                traceback.print_exc()
+            except Exception:
                 # Re-enque so message is not lost
                 self.out_buf.appendleft(message)
                 self.log_error_once("Error communicating with Hyperdash servers...")
@@ -209,6 +205,13 @@ class ServerManager(Borg, Session):
         )
 
     def create_disconnect_monkeypatch(self):
+        """
+        Without this monkey patch, the onClose method would
+        not be called in the scenario where the SDK tries to
+        connect to the server, but is rejected due to an
+        invalid API key:
+        https://github.com/crossbario/autobahn-python/issues/559
+        """
         def connect_success(proto):
             orig_on_close = proto.onClose
 

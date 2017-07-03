@@ -53,8 +53,8 @@ class HyperDash:
         """
         self.job_name = job_name
         self.code_runner = code_runner
-        self.server_manager_instance = server_manager_class()
         self.server_manager_class = server_manager_class
+        self.server_manager_instance = self.server_manager_class()
         self.out_buf, self.err_buf = io_bufs
         self.std_out, self.std_err = std_streams
         self.custom_api_key_getter = custom_api_key_getter
@@ -65,6 +65,8 @@ class HyperDash:
 
         # SDK-generated run UUID
         self.current_sdk_run_uuid = None
+
+        self.server_manager_instance.custom_init(self.custom_api_key_getter)
 
         # TODO: Support file
         self.logger = logging.getLogger("hyperdash.{}".format(__name__))
@@ -84,7 +86,6 @@ class HyperDash:
 
     def print_out(self, s):
         message = self.create_log_message(INFO_LEVEL, s)
-        # TODO: may not be available yet
         self.server_manager_instance.put_buf(message)
         self.std_out.write(s)
 
@@ -129,10 +130,12 @@ class HyperDash:
     def run(self):
         # Create a UUID to uniquely identify this run from the SDK's point of view
         self.current_sdk_run_uuid = str(uuid.uuid4())
-        self.server_manager_instance.custom_init(self.custom_api_key_getter)
 
         def user_thread():
-            # Prep the user-code thread
+            # Twisted callInThread API does not support the daemon flag, so we
+            # wrap this in our own thread. Setting daemon = True is important
+            # because otherwise if a user Ctrl-C'd, the program would not
+            # terminate until the thread running the user's code had completed.
             code_thread = Thread(target=self.code_runner.run)
             code_thread.daemon = True
             code_thread.start()
@@ -151,7 +154,6 @@ class HyperDash:
                 self.print_out(e)
                 self.print_err(e)
                 yield self.cleanup()
-                # TODO: When we switch to multiprocessing, kill the code process here
                 raise
 
         LoopingCall(event_loop).start(2)
