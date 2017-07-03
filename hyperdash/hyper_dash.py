@@ -122,6 +122,7 @@ class HyperDash:
 
     @inlineCallbacks
     def cleanup(self):
+        self.capture_io()
         yield self.server_manager_instance.cleanup()
         reactor.stop()
 
@@ -154,4 +155,5 @@ class HyperDash:
                 raise
 
         LoopingCall(event_loop).start(2)
+        self.server_manager_instance.put_buf(self.create_run_started_message())
         reactor.run()

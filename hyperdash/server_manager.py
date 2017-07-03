@@ -10,6 +10,8 @@ from collections import deque
 
 from autobahn.twisted.wamp import Session
 from autobahn.twisted.wamp import ApplicationRunner
+from autobahn.wamp.exception import ApplicationError
+from autobahn.wamp.types import CallOptions
 
 from twisted.internet import reactor, threads
 from twisted.internet.defer import inlineCallbacks, returnValue
@@ -83,12 +85,38 @@ class ServerManager(Borg, Session):
                 returnValue(True)
 
             try:
-                yield self.call(u"sdk.sendMessage", message)
+                # TODO: Send multiple messages at once
+                yield self.call(
+                    u"sdk.sendMessage",
+                    message,
+                    hyperdash_api_key=self.get_api_key(),
+                )
             # Poison-pill, drop it
             except ValueError:
                 self.logger.debug("Invalid websocket message")
                 continue
-            except Exception:
+            except ApplicationError as e:
+                if "api_key_required" in e.error_message():
+                    self.unauthorized = True
+                    # Prevent auto-reconnect from trying forever
+                    self.application_runner.stop()
+                    api_key = self.get_api_key()
+                    self.log_error_once("Invalid API key: {}".format(api_key))
+                else:
+                    self.log_error_once(
+                        "Error communicating with Hyperdash servers: {}".format(
+                            e.error_message(),
+                        ),
+                    )
+                    self.logger.debug("Error sending WAMP message")
+
+                # Re-enque so message is not lost
+                self.out_buf.appendleft(message)
+                returnValue(False)
+            except Exception as e:
+                print(e)
+                import traceback
+                traceback.print_exc()
                 # Re-enque so message is not lost
                 self.out_buf.appendleft(message)
                 self.log_error_once("Error communicating with Hyperdash servers...")
