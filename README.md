@@ -14,7 +14,8 @@ TODO
 1) Clone the repo
 2) In the root of the SDK directory, run `virtualenv env` to create a virtual environment
 3) Run `. env/bin/activate` to activate the virtual environment
-4) Run `pip install -r requirements_dev.txt` to install dependencies
+4) Run `pip install --upgrade pip`
+5) Run `pip install -r requirements_dev.txt` to install dependencies
 
 ### Release new version
 
@@ -52,3 +53,4 @@ TODO
 - StringIO buffers and unicode
 - Maximum log size + truncate old logs
 - Local log files
+- Support recursive functions

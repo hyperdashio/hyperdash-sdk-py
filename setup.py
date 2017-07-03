@@ -1,13 +1,15 @@
 from setuptools import setup
 
 
-version = "0.1.5"
+version = "0.1.6"
 
 setup(
     name='hyperdash',
     packages=['hyperdash', 'hyperdash_cli'],
     install_requires=[
-        'ws4py',
+        'autobahn',
+        'Twisted',
+        'pyOpenSSL',
         'six'
     ],
     entry_points={

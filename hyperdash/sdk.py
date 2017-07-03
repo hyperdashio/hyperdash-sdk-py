@@ -3,7 +3,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import sys
-import time
 
 from .code_runner import CodeRunner
 from .hyper_dash import HyperDash
@@ -19,7 +18,6 @@ from .server_manager import ServerManager
 
 
 def monitor(job_name, api_key_getter=None):
-    server_manager = ServerManager(custom_api_key_getter=api_key_getter)
 
     def _monitor(f):
         # Buffers to which to redirect output so we can capture it
@@ -33,6 +31,12 @@ def monitor(job_name, api_key_getter=None):
         sys.stdout, sys.stderr = out
 
         def monitored(*args, **kwargs):
+            if not hasattr(f, 'callcount'):
+                f.callcount = 0
+            if f.callcount >= 1:
+                raise Exception("Hyperdash does not support recursive functions!")
+            else:
+                f.callcount += 1
             # TODO: Instead of just returning once the function has completed,
             # this decorator needs to act like a daemon that runs the users
             # code, but also continues to wait for instructions from a remote
@@ -47,13 +51,14 @@ def monitor(job_name, api_key_getter=None):
                 hyper_dash = HyperDash(
                     job_name,
                     code_runner,
-                    server_manager,
+                    ServerManager,
                     out,
                     (old_out, old_err,),
                     custom_api_key_getter=api_key_getter,
                 )
                 hyper_dash.run()
                 print("User code run successfully. Waiting for further instructions from server...")
+                f.callcount -= 1
             # Prevent uncaught exceptions from silently being swallowed
             except Exception:
                 raise

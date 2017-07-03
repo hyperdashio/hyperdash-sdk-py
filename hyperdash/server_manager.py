@@ -8,22 +8,61 @@ import sys
 
 from collections import deque
 
-from ws4py.client.threadedclient import WebSocketClient
-from ws4py.exc import HandshakeError
+from autobahn.twisted.wamp import Session
+from autobahn.twisted.wamp import ApplicationRunner
+from autobahn.wamp.exception import ApplicationError
+from autobahn.wamp.types import CallOptions
+
+from twisted.internet import reactor, threads
+from twisted.internet.defer import inlineCallbacks, returnValue
+
+from .constants import AUTH_KEY_NAME, get_wamp_url, WAMP_REALM
 
 
 # Python 2/3 compatibility
 __metaclass__ = type
 
 
-class ServerManager(WebSocketClient):
+class Borg:
+    __shared_state = {}
 
-    def opened(self):
-        pass
+    def __init__(self):
+        self.__dict__ = self.__shared_state
 
-    def closed(self, code, reason=None):
-        print("Closed down", code, reason)
-        self.active = False
+
+class ServerManager(Borg, Session):
+    """
+    The ServerManager class inherits from Borg (to make it a singleton)
+    and from Session to use the WAMP protocol.
+
+    We want this class to behave like a Singleton because the interface
+    exposed by the Autobahn WAMP library accepts a class and instantiates
+    it, preventing us from doing any initialization. Making the class a
+    singleton allows us to instantiate it and configure it before the
+    library does.
+
+    We also define a custom_init() function instead of using __init__() to
+    setup the class's state. This is because the auto_reconnect feature of
+    the Autobahn library internally calls __init__. Thus, if we setup our
+    state in __init__ we would lose all pending incoming/outgoing messages
+    everytime we were disconnected.
+    """
+    def onJoin(self, *args, **kwargs):
+        self.logger.debug("Realm joined")
+        self.unauthorized = False
+
+    def onClose(self, wasClean, code=None, reason=None):
+        if reason and "401" in reason:
+            self.unauthorized = True
+            # Prevent auto-reconnect from trying forever
+            self.application_runner.stop()
+
+            api_key = self.get_api_key()
+            self.log_error_once("Invalid API key: {}".format(api_key))
+        elif not wasClean:
+            self.log_error_once(
+                "Connection to Hyperdash servers terminated: {}".format(reason),
+            )
 
     def received_message(self, m):
         self.in_buf.append(m)
@@ -32,59 +71,53 @@ class ServerManager(WebSocketClient):
     def put_buf(self, m):
         self.out_buf.append(m)
 
+    @inlineCallbacks
     def tick(self):
-        if not self.active:
-            success = self.reconnect()
-            # Skip this tick
-            if not success:
-                return
-
+        if self.unauthorized:
+            returnValue(False)
         # TODO: Max messages per tick?
         while True:
             try:
                 message = self.out_buf.popleft()
             # Empty
             except IndexError:
-                return
+                # Clean exit
+                returnValue(True)
 
             try:
-                self.send(message)
+                # TODO: Send multiple messages at once
+                kwargs = {
+                    AUTH_KEY_NAME: self.get_api_key(),
+                }
+                yield self.call(u"sdk.sendMessage", message, **kwargs)
             # Poison-pill, drop it
             except ValueError:
                 self.logger.debug("Invalid websocket message")
                 continue
-            except Exception:
-                # Assume we've been disconnected
-                self.active = False
+            except ApplicationError as e:
+                if "api_key_required" in e.error_message():
+                    self.unauthorized = True
+                    # Prevent auto-reconnect from trying forever
+                    self.application_runner.stop()
+                    api_key = self.get_api_key()
+                    self.log_error_once("Invalid API key: {}".format(api_key))
+                else:
+                    self.log_error_once(
+                        "Error communicating with Hyperdash servers: {}".format(
+                            e.error_message(),
+                        ),
+                    )
+
                 # Re-enque so message is not lost
                 self.out_buf.appendleft(message)
-                self.logger.debug("Unable to send websocket message")
-                break
-
-    def reconnect(self):
-        api_key = self.get_api_key()
-        if not api_key:
-            return False
-
-        try:
-            super(ServerManager, self).__init__(
-                "ws://127.0.0.1:4000/api/websocket",
-                protocols=["http-only", "chat"],
-                headers=[("x-hyperdash-auth", api_key,)],
-            )
-            self.connect()
-            self.active = True
-        except HandshakeError as h:
-            if '401' in h.msg:
-                self.log_error_once("api key: {} is invalid".format(api_key))
-            else:
-                self.log_error_once("Handshake error: {}".format(h.msg))
-            return False
-        except Exception as e:
-            self.log_error_once("Unable to connect to hyperdash server")
-            return False
-
-        return True
+                returnValue(False)
+            except Exception:
+                # Re-enque so message is not lost
+                self.out_buf.appendleft(message)
+                self.log_error_once("Error communicating with Hyperdash servers...")
+                self.logger.debug("Error sending WAMP message")
+                # Exited with pending messages
+                returnValue(False)
 
     def get_api_key(self):
         # If they provided a custom function, just use that
@@ -142,17 +175,54 @@ class ServerManager(WebSocketClient):
         self.logger.error(message)
         self.logged_errors.add(message)
 
+    @inlineCallbacks
     def cleanup(self):
-        if not self.active:
-            return
+        # Try and flush any remaining messages
+        clean = yield self.tick()
+        returnValue(clean)
 
-        self.close()
-        self.active = False
-
-    def __init__(self, custom_api_key_getter):
+    def custom_init(self, custom_api_key_getter):
         self.out_buf = deque()
         self.in_buf = deque()
         self.logger = logging.getLogger("hyperdash.{}".format(__name__))
-        self.active = False
         self.custom_api_key_getter = custom_api_key_getter
         self.logged_errors = set()
+        self.unauthorized = False
+
+        self.application_runner = ApplicationRunner(
+            url=get_wamp_url(),
+            realm=WAMP_REALM,
+            headers={AUTH_KEY_NAME: self.get_api_key()},
+        )
+        self.application_runner_deferred = self.application_runner.run(
+            ServerManager,
+            start_reactor=False,
+            auto_reconnect=True,
+        )
+        self.application_runner_deferred.addCallback(
+            self.create_disconnect_monkeypatch(),
+        )
+
+    def create_disconnect_monkeypatch(self):
+        """
+        Without this monkey patch, the onClose method would
+        not be called in the scenario where the SDK tries to
+        connect to the server, but is rejected due to an
+        invalid API key:
+        https://github.com/crossbario/autobahn-python/issues/559
+        """
+        def connect_success(proto):
+            orig_on_close = proto.onClose
+
+            def fake_on_close(*args, **kwargs):
+                if proto._session is None:
+                    self.onClose(*args, **kwargs)
+                else:
+                    orig_on_close(*args, **kwargs)
+
+            proto.onClose = fake_on_close
+        return connect_success
+
+    def __init__(self, *args, **kwargs):
+        Borg.__init__(self)
+        Session.__init__(self, *args, **kwargs)

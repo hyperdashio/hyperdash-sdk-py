@@ -5,6 +5,7 @@ from six.moves.urllib.parse import urlencode
 from six.moves.urllib.request import urlopen
 from six.moves import input
 
+from .constants import get_base_url
 
 def signup():
     email = get_input("Email address (must be valid):")
@@ -41,7 +42,7 @@ def get_input(display):
 
 def post_json(data):
     return urlopen(
-        "http://localhost:4000/api/users",
+        "{}/api/users".format(get_base_url()),
         bytes(json.dumps(data).encode('utf8')),
     )
 

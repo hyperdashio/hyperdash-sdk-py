@@ -33,6 +33,7 @@ class CodeRunner:
                 f(*args, **kwargs)
             except Exception as e:
                 self.logger.error(str(e))
+                raise
             finally:
                 with self.lock:
                     self.done = True
