@@ -1,4 +1,5 @@
 import time
+import sys
 from hyperdash.sdk import monitor
 
 
@@ -10,6 +11,8 @@ def main():
     print("accuracy: 0%")
     time.sleep(2)
     print("accuracy: 25%")
+    sys.stdout.flush()
+    sys.stderr.flush()
     time.sleep(2)
     print("accuracy: 50%")
     time.sleep(2)
