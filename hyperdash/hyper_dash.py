@@ -68,6 +68,17 @@ class HyperDash:
 
         self.server_manager_instance.custom_init(self.custom_api_key_getter)
 
+        def on_stdout_flush():
+            self.capture_io()
+            self.std_out.flush()
+
+        def on_stderr_flush():
+            self.capture_io()
+            self.std_err.flush()
+
+        self.out_buf.set_on_flush(on_stdout_flush)
+        self.err_buf.set_on_flush(on_stderr_flush)
+
         # TODO: Support file
         self.logger = logging.getLogger("hyperdash.{}".format(__name__))
 
