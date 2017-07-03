@@ -3,7 +3,7 @@ import sys
 from hyperdash.sdk import monitor
 
 
-@monitor(job_name="cats v. dogs")
+@monitor("cats v. dogs")
 def main():
     # while True:
     print("Doing the machine learning...")

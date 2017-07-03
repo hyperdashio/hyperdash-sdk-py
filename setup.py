@@ -10,6 +10,7 @@ setup(
         'autobahn',
         'Twisted',
         'pyOpenSSL',
+        'service_identity',
         'six'
     ],
     entry_points={
