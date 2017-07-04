@@ -127,7 +127,7 @@ class HyperDash:
         """Create a structured message for the server."""
         return json.dumps({
             'type': typeStr,
-            'timestamp': int(time.time()),
+            'timestamp': int(time.time()*1000),
             'sdk_run_uuid': self.current_sdk_run_uuid,
             'payload': payload,
         })
