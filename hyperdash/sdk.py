@@ -57,7 +57,6 @@ def monitor(model_name, api_key_getter=None):
                     custom_api_key_getter=api_key_getter,
                 )
                 hyper_dash.run()
-                print("User code run successfully. Waiting for further instructions from server...")
                 f.callcount -= 1
             # Prevent uncaught exceptions from silently being swallowed
             except Exception:

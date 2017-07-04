@@ -83,17 +83,20 @@ class HyperDash:
         self.logger = logging.getLogger("hyperdash.{}".format(__name__))
 
     def capture_io(self):
+        self.out_buf.acquire()
         out = self.out_buf.getvalue()
-        err = self.err_buf.getvalue()
-
         len_out = len(out) - self.out_buf_offset
-        len_err = len(err) - self.err_buf_offset
-
-        self.print_out(out[self.out_buf_offset:]) if len_out != 0 else None
-        self.print_err(err[self.err_buf_offset:]) if len_err != 0 else None
-
+        self.print_out(out[self.out_buf_offset:]) if len_out != 0 else None        
         self.out_buf_offset += len_out
+        self.out_buf.release()
+        
+        self.err_buf.acquire()
+        err = self.err_buf.getvalue()
+        len_err = len(err) - self.err_buf_offset
+        self.print_err(err[err_buf_offset:]) if len_err != 0 else None        
         self.err_buf_offset += len_err
+        self.err_buf.release()
+        
 
     def print_out(self, s):
         message = self.create_log_message(INFO_LEVEL, s)
@@ -127,7 +130,7 @@ class HyperDash:
         """Create a structured message for the server."""
         return json.dumps({
             'type': typeStr,
-            'timestamp': int(time.time()*1000),
+            'timestamp': int(time.time() * 1000),
             'sdk_run_uuid': self.current_sdk_run_uuid,
             'payload': payload,
         })
@@ -167,6 +170,6 @@ class HyperDash:
                 yield self.cleanup()
                 raise
 
-        LoopingCall(event_loop).start(2)
+        LoopingCall(event_loop).start(1)
         self.server_manager_instance.put_buf(self.create_run_started_message())
         reactor.run()
