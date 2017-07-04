@@ -93,7 +93,7 @@ class HyperDash:
         self.err_buf.acquire()
         err = self.err_buf.getvalue()
         len_err = len(err) - self.err_buf_offset
-        self.print_err(err[err_buf_offset:]) if len_err != 0 else None        
+        self.print_err(err[self.err_buf_offset:]) if len_err != 0 else None        
         self.err_buf_offset += len_err
         self.err_buf.release()
         
