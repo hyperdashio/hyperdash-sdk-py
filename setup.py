@@ -1,7 +1,7 @@
 from setuptools import setup
 
 
-version = "0.1.12"
+version = "0.1.14"
 
 setup(
     name='hyperdash',
