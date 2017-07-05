@@ -23,17 +23,18 @@ def monitor(model_name, api_key_getter=None):
     fix_certificate_authorities()
 
     def _monitor(f):
-        # Buffers to which to redirect output so we can capture it
-        out = [IOBuffer(), IOBuffer()]
-        logging.basicConfig(stream=out[0], level=logging.INFO)
-
-        # Capture STDOUT/STDERR before they're modified
-        old_out, old_err = sys.stdout, sys.stderr
-
-        # Redirect STDOUT/STDERR to buffers
-        sys.stdout, sys.stderr = out
 
         def monitored(*args, **kwargs):
+            # Buffers to which to redirect output so we can capture it
+            out = [IOBuffer(), IOBuffer()]
+            logging.basicConfig(stream=out[0], level=logging.INFO)
+
+            # Capture STDOUT/STDERR before they're modified
+            old_out, old_err = sys.stdout, sys.stderr
+
+            # Redirect STDOUT/STDERR to buffers
+            sys.stdout, sys.stderr = out
+
             if not hasattr(f, 'callcount'):
                 f.callcount = 0
             if f.callcount >= 1:
