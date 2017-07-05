@@ -2,12 +2,15 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+import os
 import sys
 
 from .code_runner import CodeRunner
 from .hyper_dash import HyperDash
 from .io_buffer import IOBuffer
 from .server_manager import ServerManager
+
+import certifi
 
 
 # TODO: We should probably spawn a separate process instead of using a thread
@@ -18,6 +21,11 @@ from .server_manager import ServerManager
 
 
 def monitor(model_name, api_key_getter=None):
+
+    # Gross hack - Needs to happen as soon as possible so we put it here
+    # https://github.com/crossbario/autobahn-python/issues/866
+    # https://github.com/twisted/treq/issues/94
+    os.environ['SSL_CERT_FILE'] = certifi.where()
 
     def _monitor(f):
         # Buffers to which to redirect output so we can capture it
