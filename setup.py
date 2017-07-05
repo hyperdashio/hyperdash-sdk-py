@@ -1,7 +1,7 @@
 from setuptools import setup
 
 
-version = "0.1.11"
+version = "0.1.12"
 
 setup(
     name='hyperdash',
@@ -11,7 +11,8 @@ setup(
         'Twisted',
         'pyOpenSSL',
         'service_identity',
-        'six'
+        'six',
+        'certifi'
     ],
     entry_points={
         'console_scripts': ['hyperdash = hyperdash_cli.cli:main']
