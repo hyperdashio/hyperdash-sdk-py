@@ -12,7 +12,7 @@ setup(
         'pyOpenSSL',
         'service_identity',
         'six',
-        'certifi'
+        'certifi',
     ],
     entry_points={
         'console_scripts': ['hyperdash = hyperdash_cli.cli:main']
