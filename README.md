@@ -1,12 +1,12 @@
-Hyperdash Python SDK
+# Hyperdash Python SDK
 
 The Hyperdash Python SDK is the official SDK for [Hyperdash.io](https://hyperdash.io). Once installed, the SDK automatically monitors your machine learning jobs.
 
-# Installation
+## Installation
 
 `pip install --upgrade pip && pip install hyperdash`
 
-# Usage
+## Usage
 
 Import the monitor function, and apply it as a decorator to a function that runs your machine learning job. The only argument you need to pass to the monitor function is the name of the model that you're training.
 
