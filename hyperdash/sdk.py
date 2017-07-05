@@ -17,15 +17,10 @@ import certifi
 # so that it is easier to kill jobs, but that makes capturing STDOUT trickier
 # so we use threads for now.
 
-# TODO: I think StringIO buffers don't handle unicode properly. Investigate.
-
 
 def monitor(model_name, api_key_getter=None):
-
     # Gross hack - Needs to happen as soon as possible so we put it here
-    # https://github.com/crossbario/autobahn-python/issues/866
-    # https://github.com/twisted/treq/issues/94
-    os.environ['SSL_CERT_FILE'] = certifi.where()
+    fix_certificate_authorities()
 
     def _monitor(f):
         # Buffers to which to redirect output so we can capture it
@@ -74,3 +69,15 @@ def monitor(model_name, api_key_getter=None):
                 sys.stdout, sys.stderr = old_out, old_err
         return monitored
     return _monitor
+
+
+def fix_certificate_authorities():
+    """
+    In certain environments twisted looks in the wrong places for
+    your trusted certificate authorities and then begins to fail silently
+    whenever you try and established a TLS/SSL connection. This hack forces
+    the underlying machinery to look in the right place for trusted CA's.
+    https://github.com/crossbario/autobahn-python/issues/866
+    https://github.com/twisted/treq/issues/94
+    """
+    os.environ['SSL_CERT_FILE'] = certifi.where()
