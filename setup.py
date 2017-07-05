@@ -11,7 +11,8 @@ setup(
         'Twisted',
         'pyOpenSSL',
         'service_identity',
-        'six'
+        'six',
+        'certifi'
     ],
     entry_points={
         'console_scripts': ['hyperdash = hyperdash_cli.cli:main']
