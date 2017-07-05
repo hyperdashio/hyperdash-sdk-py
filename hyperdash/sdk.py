@@ -19,7 +19,7 @@ import certifi
 
 
 def monitor(model_name, api_key_getter=None):
-    # Gross hack - Needs to happen as soon as possible so we put it here
+    # Needs to happen as soon as possible so we put it here
     fix_certificate_authorities()
 
     def _monitor(f):
