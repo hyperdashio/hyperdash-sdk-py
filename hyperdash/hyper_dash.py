@@ -86,17 +86,16 @@ class HyperDash:
         self.out_buf.acquire()
         out = self.out_buf.getvalue()
         len_out = len(out) - self.out_buf_offset
-        self.print_out(out[self.out_buf_offset:]) if len_out != 0 else None        
+        self.print_out(out[self.out_buf_offset:]) if len_out != 0 else None
         self.out_buf_offset += len_out
         self.out_buf.release()
-        
+
         self.err_buf.acquire()
         err = self.err_buf.getvalue()
         len_err = len(err) - self.err_buf_offset
-        self.print_err(err[self.err_buf_offset:]) if len_err != 0 else None        
+        self.print_err(err[self.err_buf_offset:]) if len_err != 0 else None
         self.err_buf_offset += len_err
         self.err_buf.release()
-        
 
     def print_out(self, s):
         message = self.create_log_message(INFO_LEVEL, s)
@@ -126,6 +125,12 @@ class HyperDash:
             },
         )
 
+    def create_run_ended_message(self, final_status):
+        return self.create_sdk_message(
+            TYPE_ENDED,
+            {'final_status': final_status},
+        )
+
     def create_sdk_message(self, typeStr, payload):
         """Create a structured message for the server."""
         return json.dumps({
@@ -136,8 +141,14 @@ class HyperDash:
         })
 
     @inlineCallbacks
-    def cleanup(self):
+    def cleanup(self, clean):
         self.capture_io()
+
+        final_status = "success" if clean else "failure"
+        self.server_manager_instance.put_buf(
+            self.create_run_ended_message(final_status),
+        )
+
         yield self.server_manager_instance.cleanup()
         reactor.stop()
 
@@ -162,12 +173,12 @@ class HyperDash:
                 self.capture_io()
                 yield self.server_manager_instance.tick()
                 if self.code_runner.is_done():
-                    yield self.cleanup()
+                    yield self.cleanup(True)
                     return
             except Exception as e:
                 self.print_out(e)
                 self.print_err(e)
-                yield self.cleanup()
+                yield self.cleanup(False)
                 raise
 
         LoopingCall(event_loop).start(1)
