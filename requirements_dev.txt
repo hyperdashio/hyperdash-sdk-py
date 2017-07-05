@@ -3,3 +3,4 @@ wheel==0.24.0
 autobahn==17.6.2
 Twisted==17.5.0
 pyOpenSSL==17.1.0
+certifi==2017.4.17
