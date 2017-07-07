@@ -12,19 +12,19 @@ from collections import deque
 from autobahn.twisted.wamp import Session
 from autobahn.twisted.wamp import ApplicationRunner
 from autobahn.wamp.exception import ApplicationError
-from autobahn.wamp.types import CallOptions
 
-from twisted.internet import reactor, threads
-from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.internet.defer import inlineCallbacks
+from twisted.internet.defer import returnValue
 
-from .constants import AUTH_KEY_NAME, get_wamp_url, WAMP_REALM, get_hyperdash_json_paths
+from .constants import AUTH_KEY_NAME
+from .constants import CACHE_API_KEY_FOR_SECONDS
+from .constants import get_hyperdash_json_paths
+from .constants import get_wamp_url
+from .constants import WAMP_REALM
 
 
 # Python 2/3 compatibility
 __metaclass__ = type
-
-
-CACHE_API_KEY_FOR_SECONDS = 300
 
 
 class Borg:
@@ -128,7 +128,7 @@ class ServerManager(Borg, Session):
         cur_time = time.time()
 
         # Use cached API key if available
-        if self.fetched_api_key_at and cur_time - self.fetched_api_key_at >= CACHE_API_KEY_FOR_SECONDS:
+        if self.fetched_api_key_at and cur_time - self.fetched_api_key_at < CACHE_API_KEY_FOR_SECONDS:
             return self.api_key
 
         # Set this now regardless of the outcome to make sure it runs

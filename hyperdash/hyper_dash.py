@@ -181,6 +181,10 @@ class HyperDash:
                 yield self.cleanup(False)
                 raise
 
-        LoopingCall(event_loop).start(1)
-        self.server_manager_instance.put_buf(self.create_run_started_message())
+        # Create run_start message before starting the LoopingCall to make sure that the
+        # run_started message always precedes any log messages
+        self.server_manager_instance.put_buf(self.create_run_started_message())        
+        # now=False to give the ServerManager a chance to setup a connection before we try
+        # and send messages.
+        LoopingCall(event_loop).start(1, now=False)
         reactor.run()

@@ -34,7 +34,7 @@ Don't have an API key? Run `hyperdash signup` to get one!
 
 ### API key storage
 
-If you signed up with the CLI, the Hyperdash CLI will automatically install your API key in a hyperdash.json file in the home directory for you user.
+If you signed up through the CLI, then your API key is already installed in hyperdash.json file in the home directory of your user.
 
 You can alternatively override this API key with a hyperdash.json file in your local directory (so you can have different API keys for different projects) or with the HYPERDASH_API_KEY environment variable.
 

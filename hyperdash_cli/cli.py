@@ -4,13 +4,14 @@ import os
 import time
 import json
 
-from six.moves.urllib.parse import urlencode
 from six.moves.urllib.request import urlopen
 from six.moves import input
 
-from .constants import get_base_url
-from hyperdash.constants import get_hyperdash_json_paths, get_hyperdash_json_home_path
+from hyperdash.constants import get_hyperdash_json_home_path
+from hyperdash.constants import get_hyperdash_json_paths
 from hyperdash.sdk import monitor
+
+from .constants import get_base_url
 
 
 def signup():
@@ -49,8 +50,8 @@ def signup():
         We stored your API key in {} 
         and we'll use that as the default for future jobs!
 
-        If you want to see Hyperdash in action, install our
-        mobile app and then run `hyperdash demo`
+        If you want to see Hyperdash in action, run `hyperdash demo`
+        and then install our mobile app to monitor your job in realtime!
     """.format(get_hyperdash_json_home_path())
     )
 
@@ -116,19 +117,19 @@ def write_hyperdash_json_file(hyperdash_json):
 
 
 def get_api_key_from_file():
-        parsed = None
-        for path in get_hyperdash_json_paths():
-            try:
-                with open(path, "r") as f:
-                    try:
-                        parsed = json.load(f)
-                    except ValueError:
-                        print("hyperdash.json is not valid JSON")
-                        return None
-            except IOError:
-                continue
+    parsed = None
+    for path in get_hyperdash_json_paths():
+        try:
+            with open(path, "r") as f:
+                try:
+                    parsed = json.load(f)
+                except ValueError:
+                    print("hyperdash.json is not valid JSON")
+                    return None
+        except IOError:
+            continue
 
-        return parsed.get('api_key') if parsed else None
+    return parsed.get('api_key') if parsed else None
 
 
 def get_api_key_from_env():
