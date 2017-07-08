@@ -5,18 +5,22 @@ import json
 import logging
 import os
 import sys
+import time
 
 from collections import deque
 
 from autobahn.twisted.wamp import Session
 from autobahn.twisted.wamp import ApplicationRunner
 from autobahn.wamp.exception import ApplicationError
-from autobahn.wamp.types import CallOptions
 
-from twisted.internet import reactor, threads
-from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.internet.defer import inlineCallbacks
+from twisted.internet.defer import returnValue
 
-from .constants import AUTH_KEY_NAME, get_wamp_url, WAMP_REALM
+from .constants import AUTH_KEY_NAME
+from .constants import CACHE_API_KEY_FOR_SECONDS
+from .constants import get_hyperdash_json_paths
+from .constants import get_wamp_url
+from .constants import WAMP_REALM
 
 
 # Python 2/3 compatibility
@@ -75,6 +79,7 @@ class ServerManager(Borg, Session):
     def tick(self):
         if self.unauthorized:
             returnValue(False)
+
         # TODO: Max messages per tick?
         while True:
             try:
@@ -120,6 +125,15 @@ class ServerManager(Borg, Session):
                 returnValue(False)
 
     def get_api_key(self):
+        cur_time = time.time()
+
+        # Use cached API key if available
+        if self.fetched_api_key_at and cur_time - self.fetched_api_key_at < CACHE_API_KEY_FOR_SECONDS:
+            return self.api_key
+
+        # Set this now regardless of the outcome to make sure it runs
+        self.fetched_api_key_at = cur_time
+
         # If they provided a custom function, just use that
         if self.custom_api_key_getter:
             api_key = self.custom_api_key_getter()
@@ -140,31 +154,25 @@ class ServerManager(Borg, Session):
             self.log_error_once("Unable to detect API key in hyperdash.json or HYPERDASH_API_KEY environment variable")
 
         if from_file and from_env:
-            self.log_error_once("Found API key in hyperdash.json AND HYPERDASH_API_KEY environment variable. Please only use one.")
+            self.log_error_once("Found API key in hyperdash.json AND HYPERDASH_API_KEY environment variable. Hyperdash.json will take precedence.")
 
-        return from_file or from_env
+        self.api_key = from_file or from_env
+        return self.api_key
 
     def get_api_key_from_file(self):
-        main = sys.modules["__main__"]
-        if not hasattr(main, "__file__"):
-            return None
+        parsed = None
+        for path in get_hyperdash_json_paths():
+            try:
+                with open(path, "r") as f:
+                    try:
+                        parsed = json.load(f)
+                    except ValueError:
+                        self.log_error_once("hyperdash.json is not valid JSON")
+                        return None
+            except IOError:
+                continue
 
-        main_file_path = os.path.abspath(main.__file__)
-        root_folder = os.path.dirname(main_file_path)
-        hyperdash_file_path = os.path.join(root_folder, "hyperdash.json")
-
-        try:
-            with open(hyperdash_file_path, "r") as f:
-                try:
-                    parsed = json.load(f)
-                except ValueError:
-                    self.log_error_once("hyperdash.json is not valid JSON")
-                    return None
-        except IOError:
-            self.logger.debug("hyperdash.json not found")
-            return None
-
-        return parsed.get("api_key")
+        return parsed.get('api_key') if parsed else None
 
     def get_api_key_from_env(self):
         return os.environ.get("HYPERDASH_API_KEY")
@@ -188,6 +196,8 @@ class ServerManager(Borg, Session):
         self.custom_api_key_getter = custom_api_key_getter
         self.logged_errors = set()
         self.unauthorized = False
+        self.api_key = None
+        self.fetched_api_key_at = None
 
         self.application_runner = ApplicationRunner(
             url=get_wamp_url(),
