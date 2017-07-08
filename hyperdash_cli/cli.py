@@ -16,9 +16,9 @@ from .constants import get_base_url
 
 
 def signup():
-    email = get_input("Email address (must be valid):")
+    email = get_input("Email address:")
     company = get_input("Company:")
-    password = get_input("Password (must be at least 8 characters):", True)
+    password = get_input("Password (8 characters or more):", True)
 
     print("Trying to sign you up now...")
     try:
