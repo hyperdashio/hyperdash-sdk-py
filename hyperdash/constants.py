@@ -31,7 +31,7 @@ def get_hyperdash_json_paths():
 
 
 def get_hyperdash_json_home_path():
-    return os.path.join(os.path.expanduser("~"), "hyperdash.json")
+    return os.path.join(os.path.expanduser("~/.hyperdash"), "hyperdash.json")
 
 
 def get_hyperdash_json_local_path():
