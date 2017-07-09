@@ -92,7 +92,7 @@ class ServerManager(Borg, Session):
                 yield self.send_message(create_heartbeat_message(sdk_run_uuid))
             except ApplicationError as e:
                 self.log_error_once(
-                    "Unable to send heartbeat: {}".format(e.error_message),
+                    "Unable to send heartbeat: {}".format(e.error_message()),
                 )
             except Exception as e:
                 self.log_error_once("Unable to send heartbeat message")
