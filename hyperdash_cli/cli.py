@@ -45,6 +45,13 @@ def signup():
     write_hyperdash_json_file({
         'api_key': api_key
     })
+    print("""
+        We stored your API key in {} 
+        and we'll use that as the default for future jobs.
+
+        If you want to see Hyperdash in action, run `hyperdash demo`
+        and then install our mobile app to monitor your job in realtime.
+    """.format(get_hyperdash_json_home_path())
 
     login(email, password)
 
@@ -154,15 +161,7 @@ def write_hyperdash_json_file(hyperdash_json):
     except IOError:
         # Open for read/write but will truncate if it already exists
         with open(path, 'w+') as f:
-            write_hyperdash_json_helper(f, hyperdash_json)
-          
-    print("""
-        We stored your API key in {} 
-        and we'll use that as the default for future jobs.
-
-        If you want to see Hyperdash in action, run `hyperdash demo`
-        and then install our mobile app to monitor your job in realtime.
-    """.format(get_hyperdash_json_home_path())
+            write_hyperdash_json_helper(f, hyperdash_json)     
     )
 
 
