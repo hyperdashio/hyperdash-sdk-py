@@ -166,14 +166,15 @@ class HyperDash:
         loop.start(1, now=False)
 
         # Handle Ctrl+C
-        # @inlineCallbacks
         def cleanup():
             loop.stop()
-            # Best-effort cleanup, if we return a deffered the process hangs
+            # Best-effort cleanup, if we return a deferred the process hangs
             # and never exists. This is ok though because on the off chance
             # it doesn't make it through we'll catch it when the heartbeat
             # stops coming through
             if not self.programmatic_exit:
-                self.server_manager_instance.send_message(create_run_ended_message(self.current_sdk_run_uuid, "user_canceled"))
+                self.server_manager_instance.send_message(
+                    create_run_ended_message(self.current_sdk_run_uuid, "user_canceled"),
+                )
         reactor.addSystemEventTrigger("before", "shutdown", cleanup)
         reactor.run()
