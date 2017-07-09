@@ -3,7 +3,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from inspect import getargspec
 import logging
-import sys
 from threading import Lock
 from traceback import format_exc
 
