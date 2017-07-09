@@ -33,7 +33,7 @@ def monitor(model_name, api_key_getter=None):
             old_out, old_err = sys.stdout, sys.stderr
 
             # Redirect STDOUT/STDERR to buffers
-            # sys.stdout, sys.stderr = out
+            sys.stdout, sys.stderr = out
 
             if not hasattr(f, 'callcount'):
                 f.callcount = 0
