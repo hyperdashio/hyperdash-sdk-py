@@ -140,7 +140,6 @@ class HyperDash:
         def event_loop():
             try:
                 self.capture_io()
-                yield self.server_manager_instance.tick(self.current_sdk_run_uuid)
                 exited_cleanly, is_done = self.code_runner.is_done()
                 if is_done:
                     self.programmatic_exit = True
@@ -155,19 +154,35 @@ class HyperDash:
                 yield self.cleanup("failure")
                 raise
 
+        # Network loop is separated from the main event loop so that slow network
+        # doesn't tie everything else up. Without this, when the network is slow
+        # the user would also stop seeing the logs in their local terminal.
+        @inlineCallbacks
+        def network_loop():
+            try:
+                yield self.server_manager_instance.tick(self.current_sdk_run_uuid)
+            except Exception as e:
+                self.print_out(e)
+                self.print_err(e)
+                raise
+
         # Create run_start message before starting the LoopingCall to make sure that the
         # run_started message always precedes any log messages
         self.server_manager_instance.put_buf(
             create_run_started_message(self.current_sdk_run_uuid, self.job_name),
         )
+        
+        event_loop = LoopingCall(event_loop)
+        network_loop = LoopingCall(network_loop)
         # now=False to give the ServerManager a chance to setup a connection before we try
         # and send messages.
-        loop = LoopingCall(event_loop)
-        loop.start(1, now=False)
+        network_loop.start(1, now=False)
+        event_loop.start(1, now=False)
 
         # Handle Ctrl+C
         def cleanup():
-            loop.stop()
+            event_loop.stop()
+            network_loop.stop()
             # Best-effort cleanup, if we return a deferred the process hangs
             # and never exists. This is ok though because on the off chance
             # it doesn't make it through we'll catch it when the heartbeat
