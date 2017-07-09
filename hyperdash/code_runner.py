@@ -17,6 +17,7 @@ class CodeRunner:
     def __init__(self, f, *args, **kwargs):
         self.f = self.wrap(f, *args, **kwargs)
         self.done = False
+        self.exited_cleanly = True
         self.lock = Lock()
         self.logger = logging.getLogger("hyperdash.{}".format(__name__))
 
@@ -33,6 +34,8 @@ class CodeRunner:
                 f(*args, **kwargs)
             except Exception as e:
                 self.logger.error(str(e))
+                with self.lock:
+                    self.exited_cleanly = False
                 raise
             finally:
                 with self.lock:
@@ -44,4 +47,4 @@ class CodeRunner:
 
     def is_done(self):
         with self.lock:
-            return self.done
+            return self.exited_cleanly, self.done

@@ -12,6 +12,7 @@ from collections import deque
 from autobahn.twisted.wamp import Session
 from autobahn.twisted.wamp import ApplicationRunner
 from autobahn.wamp.exception import ApplicationError
+from autobahn.wamp.types import CallOptions
 
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.defer import returnValue
@@ -21,6 +22,7 @@ from .constants import CACHE_API_KEY_FOR_SECONDS
 from .constants import get_hyperdash_json_paths
 from .constants import get_wamp_url
 from .constants import WAMP_REALM
+from .sdk_message import create_heartbeat_message
 
 
 # Python 2/3 compatibility
@@ -76,11 +78,25 @@ class ServerManager(Borg, Session):
         self.out_buf.append(m)
 
     @inlineCallbacks
-    def tick(self):
+    def tick(self, sdk_run_uuid):
         if self.unauthorized:
             returnValue(False)
 
+        # If there are no messages to be sent, check if we
+        # need to send a heartbeat
+        try:
+            if (
+                len(self.out_buf) == 0 and
+                self.last_message_sent_at and time.time() - self.last_message_sent_at >= 5
+            ):
+                yield self.send_message(create_heartbeat_message(sdk_run_uuid))
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            print(e)
+
         # TODO: Max messages per tick?
+        # TODO: Message batching
         while True:
             try:
                 message = self.out_buf.popleft()
@@ -90,11 +106,7 @@ class ServerManager(Borg, Session):
                 returnValue(True)
 
             try:
-                # TODO: Send multiple messages at once
-                kwargs = {
-                    AUTH_KEY_NAME: self.get_api_key(),
-                }
-                yield self.call(u"sdk.sendMessage", message, **kwargs)
+                yield self.send_message(message)
             # Poison-pill, drop it
             except ValueError:
                 self.logger.debug("Invalid websocket message")
@@ -116,13 +128,28 @@ class ServerManager(Borg, Session):
                 # Re-enque so message is not lost
                 self.out_buf.appendleft(message)
                 returnValue(False)
-            except Exception:
+                return
+            except Exception as e:
                 # Re-enque so message is not lost
                 self.out_buf.appendleft(message)
                 self.log_error_once("Error communicating with Hyperdash servers...")
                 self.logger.debug("Error sending WAMP message")
                 # Exited with pending messages
                 returnValue(False)
+
+    @inlineCallbacks    
+    def send_message(self, message, **kwargs):
+        kwargs = {
+            AUTH_KEY_NAME: self.get_api_key(),
+        }
+        yield self.call(
+            u"sdk.sendMessage",
+            message,
+            # Timeout is not currently working in the latest version of Autobahn...
+            # options=CallOptions(timeout=1),
+            **kwargs
+        )
+        self.last_message_sent_at = time.time()
 
     def get_api_key(self):
         cur_time = time.time()
@@ -184,9 +211,9 @@ class ServerManager(Borg, Session):
         self.logged_errors.add(message)
 
     @inlineCallbacks
-    def cleanup(self):
+    def cleanup(self, sdk_run_uuid):
         # Try and flush any remaining messages
-        clean = yield self.tick()
+        clean = yield self.tick(sdk_run_uuid)
         returnValue(clean)
 
     def custom_init(self, custom_api_key_getter):
@@ -198,6 +225,7 @@ class ServerManager(Borg, Session):
         self.unauthorized = False
         self.api_key = None
         self.fetched_api_key_at = None
+        self.last_message_sent_at = None
 
         self.application_runner = ApplicationRunner(
             url=get_wamp_url(),

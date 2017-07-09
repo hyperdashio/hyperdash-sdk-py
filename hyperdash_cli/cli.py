@@ -95,6 +95,7 @@ def demo():
         time.sleep(2)
         print("Epoch 2, accuracy: 75%")
         time.sleep(2)
+        time.sleep(30)
         print("Epoch 3, accuracy: 100%")
 
     train_dogs_vs_cats()

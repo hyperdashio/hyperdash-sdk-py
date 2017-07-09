@@ -12,13 +12,14 @@ from twisted.internet.task import LoopingCall
 from autobahn.twisted.wamp import ApplicationSession, ApplicationRunner
 from twisted.internet.defer import inlineCallbacks
 
+from .sdk_message import create_run_started_message
+from .sdk_message import create_run_ended_message
+from .sdk_message import create_log_message
+
 
 # Python 2/3 compatibility
 __metaclass__ = type
 
-TYPE_LOG = 'log'
-TYPE_STARTED = 'run_started'
-TYPE_ENDED = 'run_ended'
 
 INFO_LEVEL = 'INFO'
 ERROR_LEVEL = 'ERROR'
@@ -58,6 +59,7 @@ class HyperDash:
         self.out_buf, self.err_buf = io_bufs
         self.std_out, self.std_err = std_streams
         self.custom_api_key_getter = custom_api_key_getter
+        self.programmatic_exit = False
 
         # Used to keep track of the current position in the IO buffers
         self.out_buf_offset = 0
@@ -98,58 +100,25 @@ class HyperDash:
         self.err_buf.release()
 
     def print_out(self, s):
-        message = self.create_log_message(INFO_LEVEL, s)
+        message = create_log_message(self.current_sdk_run_uuid, INFO_LEVEL, s)
         self.server_manager_instance.put_buf(message)
         self.std_out.write(s)
 
     def print_err(self, s):
-        message = self.create_log_message(ERROR_LEVEL, s)
+        message = create_log_message(self.current_sdk_run_uuid, ERROR_LEVEL, s)
         self.server_manager_instance.put_buf(message)
         self.std_err.write(s)
 
-    def create_log_message(self, level, body):
-        return self.create_sdk_message(
-            TYPE_LOG,
-            {
-                'uuid': str(uuid.uuid4()),
-                'level': level,
-                'body': body,
-            }
-        )
-
-    def create_run_started_message(self):
-        return self.create_sdk_message(
-            TYPE_STARTED,
-            {
-                'job_name': self.job_name,
-            },
-        )
-
-    def create_run_ended_message(self, final_status):
-        return self.create_sdk_message(
-            TYPE_ENDED,
-            {'final_status': final_status},
-        )
-
-    def create_sdk_message(self, typeStr, payload):
-        """Create a structured message for the server."""
-        return json.dumps({
-            'type': typeStr,
-            'timestamp': int(time.time() * 1000),
-            'sdk_run_uuid': self.current_sdk_run_uuid,
-            'payload': payload,
-        })
 
     @inlineCallbacks
-    def cleanup(self, clean):
+    def cleanup(self, exit_status):
         self.capture_io()
 
-        final_status = "success" if clean else "failure"
         self.server_manager_instance.put_buf(
-            self.create_run_ended_message(final_status),
+            create_run_ended_message(self.current_sdk_run_uuid, exit_status),
         )
 
-        yield self.server_manager_instance.cleanup()
+        yield self.server_manager_instance.cleanup(self.current_sdk_run_uuid)
         reactor.stop()
 
     def run(self):
@@ -171,20 +140,40 @@ class HyperDash:
         def event_loop():
             try:
                 self.capture_io()
-                yield self.server_manager_instance.tick()
-                if self.code_runner.is_done():
-                    yield self.cleanup(True)
+                yield self.server_manager_instance.tick(self.current_sdk_run_uuid)
+                exited_cleanly, is_done = self.code_runner.is_done()
+                if is_done:
+                    self.programmatic_exit = True
+                    if exited_cleanly:
+                        yield self.cleanup("success")
+                    else:
+                        yield self.cleanup("failure")
                     return
             except Exception as e:
                 self.print_out(e)
                 self.print_err(e)
-                yield self.cleanup(False)
+                yield self.cleanup("failure")
                 raise
 
         # Create run_start message before starting the LoopingCall to make sure that the
         # run_started message always precedes any log messages
-        self.server_manager_instance.put_buf(self.create_run_started_message())        
+        self.server_manager_instance.put_buf(
+            create_run_started_message(self.current_sdk_run_uuid, self.job_name),
+        )
         # now=False to give the ServerManager a chance to setup a connection before we try
         # and send messages.
-        LoopingCall(event_loop).start(1, now=False)
+        loop = LoopingCall(event_loop)
+        loop.start(1, now=False)
+
+        # Handle Ctrl+C
+        # @inlineCallbacks
+        def cleanup():
+            loop.stop()
+            # Best-effort cleanup, if we return a deffered the process hangs
+            # and never exists. This is ok though because on the off chance
+            # it doesn't make it through we'll catch it when the heartbeat
+            # stops coming through
+            if not self.programmatic_exit:
+                self.server_manager_instance.send_message(create_run_ended_message(self.current_sdk_run_uuid, "user_canceled"))
+        reactor.addSystemEventTrigger("before", "shutdown", cleanup)
         reactor.run()
