@@ -17,7 +17,7 @@ from .constants import get_base_url
 
 def signup():
     email = get_input("Email address:")
-    company = get_input("Company:")
+    company = get_input("Company (optional):")
     password = get_input("Password (8 characters or more):", True)
 
     print("Trying to sign you up now...")
@@ -46,15 +46,6 @@ def signup():
         'api_key': api_key
     })
 
-    print("""
-        We stored your API key in {} 
-        and we'll use that as the default for future jobs.
-
-        If you want to see Hyperdash in action, run `hyperdash demo`
-        and then install our mobile app to monitor your job in realtime.
-    """.format(get_hyperdash_json_home_path())
-    )
-
     login(email, password)
 
 
@@ -82,10 +73,14 @@ def demo():
         def train_dogs_vs_cats():
             print("Begin training model to distinguish dogs from cats...")
             print("Epoch 1, accuracy: 50%")
-            time.sleep(2)
+            time.sleep(5)
             print("Epoch 2, accuracy: 75%")
-            time.sleep(2)
-            print("Epoch 3, accuracy: 100%")
+            time.sleep(5)
+            print("Epoch 3, accuracy: 85%")
+            time.sleep(5)
+            print("Epoch 4, accuracy: 95%")
+            time.sleep(5)
+            print("Epoch 5, accuracy: 100%")
     """)
 
     @monitor("dogs vs. cats")
@@ -95,11 +90,11 @@ def demo():
         time.sleep(5)
         print("Epoch 2, accuracy: 75%")
         time.sleep(5)
-        print("Epoch 2, accuracy: 85%")
+        print("Epoch 3, accuracy: 85%")
         time.sleep(5)
-        print("Epoch 2, accuracy: 95%")
+        print("Epoch 4, accuracy: 95%")
         time.sleep(5)
-        print("Epoch 3, accuracy: 100%")
+        print("Epoch 5, accuracy: 100%")
 
     train_dogs_vs_cats()
 
@@ -160,6 +155,15 @@ def write_hyperdash_json_file(hyperdash_json):
         # Open for read/write but will truncate if it already exists
         with open(path, 'w+') as f:
             write_hyperdash_json_helper(f, hyperdash_json)
+          
+    print("""
+        We stored your API key in {} 
+        and we'll use that as the default for future jobs.
+
+        If you want to see Hyperdash in action, run `hyperdash demo`
+        and then install our mobile app to monitor your job in realtime.
+    """.format(get_hyperdash_json_home_path())
+    )
 
 
 def write_hyperdash_json_helper(file, hyperdash_json):
