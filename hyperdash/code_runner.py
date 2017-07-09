@@ -3,7 +3,9 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from inspect import getargspec
 import logging
+import sys
 from threading import Lock
+from traceback import format_exc
 
 from .smart_ml import SmartML
 
@@ -33,7 +35,7 @@ class CodeRunner:
             try:
                 f(*args, **kwargs)
             except Exception as e:
-                self.logger.error(str(e))
+                self.logger.error(format_exc())
                 with self.lock:
                     self.exited_cleanly = False
                 raise
