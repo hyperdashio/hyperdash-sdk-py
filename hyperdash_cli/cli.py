@@ -52,6 +52,7 @@ def signup():
         If you want to see Hyperdash in action, run `hyperdash demo`
         and then install our mobile app to monitor your job in realtime.
     """.format(get_hyperdash_json_home_path())
+    )
 
     login(email, password)
 
