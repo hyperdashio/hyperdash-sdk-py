@@ -84,16 +84,11 @@ class ServerManager(Borg, Session):
 
         # If there are no messages to be sent, check if we
         # need to send a heartbeat
-        try:
-            if (
-                len(self.out_buf) == 0 and
-                self.last_message_sent_at and time.time() - self.last_message_sent_at >= 5
-            ):
-                yield self.send_message(create_heartbeat_message(sdk_run_uuid))
-        except Exception as e:
-            import traceback
-            traceback.print_exc()
-            print(e)
+        if (
+            len(self.out_buf) == 0 and
+            self.last_message_sent_at and time.time() - self.last_message_sent_at >= 5
+        ):
+            yield self.send_message(create_heartbeat_message(sdk_run_uuid))
 
         # TODO: Max messages per tick?
         # TODO: Message batching
@@ -129,7 +124,7 @@ class ServerManager(Borg, Session):
                 self.out_buf.appendleft(message)
                 returnValue(False)
                 return
-            except Exception as e:
+            except Exception:
                 # Re-enque so message is not lost
                 self.out_buf.appendleft(message)
                 self.log_error_once("Error communicating with Hyperdash servers...")
