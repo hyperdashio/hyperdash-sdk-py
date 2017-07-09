@@ -163,7 +163,6 @@ def write_hyperdash_json_file(hyperdash_json):
         # Open for read/write but will truncate if it already exists
         with open(path, 'w+') as f:
             write_hyperdash_json_helper(f, hyperdash_json)     
-    )
 
 
 def write_hyperdash_json_helper(file, hyperdash_json):
