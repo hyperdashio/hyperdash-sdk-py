@@ -88,7 +88,14 @@ class ServerManager(Borg, Session):
             len(self.out_buf) == 0 and
             self.last_message_sent_at and time.time() - self.last_message_sent_at >= 5
         ):
-            yield self.send_message(create_heartbeat_message(sdk_run_uuid))
+            try:
+                yield self.send_message(create_heartbeat_message(sdk_run_uuid))
+            except ApplicationError as e:
+                self.log_error_once(
+                    "Unable to send heartbeat: {}".format(e.error_message),
+                )
+            except Exception as e:
+                self.log_error_once("Unable to send heartbeat message")
 
         # TODO: Max messages per tick?
         # TODO: Message batching
@@ -133,18 +140,23 @@ class ServerManager(Borg, Session):
                 returnValue(False)
 
     @inlineCallbacks    
-    def send_message(self, message, **kwargs):
+    def send_message(self, message, raise_exceptions=True, **kwargs):
         kwargs = {
             AUTH_KEY_NAME: self.get_api_key(),
         }
-        yield self.call(
-            u"sdk.sendMessage",
-            message,
-            # Timeout is not currently working in the latest version of Autobahn...
-            # options=CallOptions(timeout=1),
-            **kwargs
-        )
-        self.last_message_sent_at = time.time()
+        try:
+            yield self.call(
+                u"sdk.sendMessage",
+                message,
+                # Timeout is not currently working in the latest version of Autobahn...
+                # options=CallOptions(timeout=1),
+                **kwargs
+            )
+        except Exception as e:
+            if raise_exceptions:
+                raise
+        finally:
+            self.last_message_sent_at = time.time()
 
     def get_api_key(self):
         cur_time = time.time()

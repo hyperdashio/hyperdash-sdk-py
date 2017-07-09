@@ -175,6 +175,8 @@ class HyperDash:
             if not self.programmatic_exit:
                 self.server_manager_instance.send_message(
                     create_run_ended_message(self.current_sdk_run_uuid, "user_canceled"),
+                    # Prevent "Unhandled error in Deferred:" from being shown to user
+                    raise_exceptions=False
                 )
         reactor.addSystemEventTrigger("before", "shutdown", cleanup)
         reactor.run()
