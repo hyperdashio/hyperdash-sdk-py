@@ -92,9 +92,13 @@ def demo():
     def train_dogs_vs_cats():
         print("Begin training model to distinguish dogs from cats...")
         print("Epoch 1, accuracy: 50%")
-        time.sleep(2)
+        time.sleep(5)
         print("Epoch 2, accuracy: 75%")
-        time.sleep(2)
+        time.sleep(5)
+        print("Epoch 2, accuracy: 85%")
+        time.sleep(5)
+        print("Epoch 2, accuracy: 95%")
+        time.sleep(5)
         print("Epoch 3, accuracy: 100%")
 
     train_dogs_vs_cats()
