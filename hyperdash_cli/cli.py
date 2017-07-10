@@ -10,7 +10,7 @@ from six.moves import input
 
 from hyperdash.constants import get_hyperdash_json_home_path
 from hyperdash.constants import get_hyperdash_json_paths
-from hyperdash.sdk import monitor
+from hyperdash import monitor
 
 from .constants import get_base_url
 
@@ -76,6 +76,7 @@ def demo():
 
     print("""
         Running the following program:
+        from hyperdash import monitor
 
         @monitor("dogs vs. cats")
         def train_dogs_vs_cats():
