@@ -76,7 +76,9 @@ def demo():
 
     print("""
         Running the following program:
+
         from hyperdash import monitor
+
 
         @monitor("dogs vs. cats")
         def train_dogs_vs_cats():
