@@ -8,7 +8,7 @@ import sys
 from .code_runner import CodeRunner
 from .hyper_dash import HyperDash
 from .io_buffer import IOBuffer
-from .server_manager import ServerManager
+from .server_manager import ServerManagerWAMP
 
 import certifi
 
@@ -55,7 +55,7 @@ def monitor(model_name, api_key_getter=None):
                 hyper_dash = HyperDash(
                     model_name,
                     code_runner,
-                    ServerManager,
+                    ServerManagerWAMP,
                     out,
                     (old_out, old_err,),
                     custom_api_key_getter=api_key_getter,
