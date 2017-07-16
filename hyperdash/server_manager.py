@@ -169,9 +169,11 @@ class ServerManagerHTTP(ServerManagerBase):
                 self.log_error_once(
                     "Unable to send heartbeat due to connection issues: {}".format(e),
                 )
+                return False
             except Exception as e:
                 self.logger.debug(e)
                 self.log_error_once("Unable to send heartbeat message")
+                return False
 
         # TODO: Max messages per tick?
         # TODO: Message batching
@@ -199,7 +201,8 @@ class ServerManagerHTTP(ServerManagerBase):
                     "Unable to send message due to connection issues: {}".format(e),
                 )
             except Exception as e:
-                self.log_error_once("Unable to communicate with Hyperdash servers: {}".format(format_exc()))
+                self.logger.debug(format_exc())
+                self.log_error_once("Unable to communicate with Hyperdash servers")
 
             if sent_successfully is not True:
                 # Re-enque so message is not lost

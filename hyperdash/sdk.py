@@ -19,7 +19,7 @@ import certifi
 # so we use threads for now.
 
 
-def monitor(model_name, api_key_getter=None):
+def monitor(model_name, use_http=False, api_key_getter=None):
     # Needs to happen as soon as possible so we put it here
     fix_certificate_authorities()
 
@@ -56,8 +56,7 @@ def monitor(model_name, api_key_getter=None):
                 hyper_dash = HyperDash(
                     model_name,
                     code_runner,
-                    # ServerManagerWAMP,
-                    ServerManagerHTTP,
+                    ServerManagerHTTP if use_http else ServerManagerWAMP,
                     out,
                     (old_out, old_err,),
                     use_http=True,

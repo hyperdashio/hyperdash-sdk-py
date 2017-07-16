@@ -137,16 +137,57 @@ class HyperDash:
         # Create a UUID to uniquely identify this run from the SDK's point of view
         self.current_sdk_run_uuid = str(uuid.uuid4())
 
+        # Create run_start message before doing any other setup work to make sure that the
+        # run_started message always precedes any other messages
+        self.server_manager_instance.put_buf(
+            create_run_started_message(self.current_sdk_run_uuid, self.job_name),
+        )
+
         if self.use_http:
             self.run_http()
         else:
             self.run_wamp()
 
     def run_http(self):
+        """
+        run_http works by spinning up three separate threads:
+            1) code_runner thread which runs the user's code
+            2) network_thread which does blocking I/O with the server
+            3) event_loop thread which runs the SDK's main event loop
+
+        We require the event loop and network loop to be in separate threads
+        because otherwise slow responses from the server could inhibit the
+        SDK's event loop causing weird behavior like delayed logs in the user's
+        terminal.
+
+        Once all threads are running, the event_loop thread will periodically
+        check the I/O buffers to see if any new logs have appeared, and if so,
+        it will send them to the server manager's outgoing buffer.
+
+        The network_loop thread will periodically check its outgoing buffer, and
+        if it finds any messages in there, it will send them all to the server.
+
+        Cleanup is the responsibility of the event_loop. With every tick of the
+        event_loop, we check to see if the user's code has completed running. If
+        it has, the event_loop will capture any remaining I/O and store that in
+        the ServerManager's outgoing buf, as well as store a message indicating
+        that the run is complete and its final exit status. Finally, the
+        event_loop thread will push a message into the shutdown_channel which
+        will indicate to the network_loop that it should finish sending any
+        pending messages and then exit. The event_loop thread will then exit.
+        At this point both the code_thread and event_loop thread have terminated
+        and all that remains is the network thread.
+
+        At the next tick of the network_loop, the shutdown_channel will no longer
+        be empty, and the network loop will try and fire off any remaining messages
+        in the ServerManager's buffer to the server, and then exit.
+
+        With the final thread completed, the program will exit cleanly.
+        """
         def network_loop():
             while True:
                 if self.shutdown_channel.qsize() != 0:
-                    self.server_manager_instance.tick(self.current_sdk_run_uuid)
+                    self.server_manager_instance.cleanup(self.current_sdk_run_uuid)
                     return
                 else:
                     self.server_manager_instance.tick(self.current_sdk_run_uuid)
@@ -169,12 +210,7 @@ class HyperDash:
                     self.print_err(e)
                     self.cleanup_http("failure")
                     raise
-
-        # Create run_start message before starting any threads to make sure that the
-        # run_started message always precedes any log messages
-        self.server_manager_instance.put_buf(
-            create_run_started_message(self.current_sdk_run_uuid, self.job_name),
-        )
+                time.sleep(1)
 
         code_thread = Thread(target=self.code_runner.run)
         network_thread = Thread(target=network_loop)
@@ -232,12 +268,6 @@ class HyperDash:
                 self.print_out(e)
                 self.print_err(e)
                 raise
-
-        # Create run_start message before starting the LoopingCall to make sure that the
-        # run_started message always precedes any log messages
-        self.server_manager_instance.put_buf(
-            create_run_started_message(self.current_sdk_run_uuid, self.job_name),
-        )
         
         event_loop = LoopingCall(event_loop)
         network_loop = LoopingCall(network_loop)
