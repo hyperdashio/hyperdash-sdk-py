@@ -8,6 +8,7 @@ import sys
 import time
 
 from collections import deque
+from traceback import format_exc
 
 from autobahn.twisted.wamp import Session as WAMPSession
 from autobahn.twisted.wamp import ApplicationRunner
@@ -180,7 +181,7 @@ class ServerManagerHTTP(ServerManagerBase):
             # Empty
             except IndexError:
                 # Clean exit
-                returnValue(True)
+                return True
 
             sent_successfully = False
             try:
@@ -198,18 +199,18 @@ class ServerManagerHTTP(ServerManagerBase):
                     "Unable to send message due to connection issues: {}".format(e),
                 )
             except Exception as e:
-                self.log_error_once("Unable to communicate with Hyperdash servers: {}".format(e))
+                self.log_error_once("Unable to communicate with Hyperdash servers: {}".format(format_exc()))
 
-            if not sent_successfully:
+            if sent_successfully is not True:
                 # Re-enque so message is not lost
                 self.out_buf.appendleft(message)
                 return False
 
-    def send_message(message, raise_exception=True):
+    def send_message(self, message, raise_exception=True):
         try:
             return self.s.post(
                 get_http_url(),
-                json=message,
+                json=json.loads(message),
                 headers={AUTH_KEY_NAME: self.get_api_key()},
             )
         finally:

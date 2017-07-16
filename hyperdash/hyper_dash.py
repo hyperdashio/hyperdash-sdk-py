@@ -1,6 +1,7 @@
 # Python 2/3 compatibility
 from __future__ import absolute_import, division, print_function, unicode_literals
 from threading import Thread
+from queue import Queue
 
 import json
 import logging
@@ -40,6 +41,7 @@ class HyperDash:
         server_manager_class,
         io_bufs,
         std_streams,
+        use_http=False,
         custom_api_key_getter=None,
     ):
         """Initialize the HyperDash class.
@@ -47,9 +49,10 @@ class HyperDash:
         args:
             1) job_name: Name of the current running job
             2) code_runner: Instance of CodeRunner
-            4) server_manager_class: Server manager class
-            5) io_bufs: Tuple in the form of (StringIO(), StringIO(),)
-            6) std_streams: Tuple in the form of (StdOut, StdErr)
+            3) server_manager_class: Server manager class
+            4) io_bufs: Tuple in the form of (StringIO(), StringIO(),)
+            5) std_streams: Tuple in the form of (StdOut, StdErr)
+            6) use_http: Bool to use HTTP over WAMP
             7) custom_api_key_getter: Optional function which when called returns an API key as a string
         """
         self.job_name = job_name
@@ -58,8 +61,10 @@ class HyperDash:
         self.server_manager_instance = self.server_manager_class()
         self.out_buf, self.err_buf = io_bufs
         self.std_out, self.std_err = std_streams
+        self.use_http = use_http
         self.custom_api_key_getter = custom_api_key_getter
         self.programmatic_exit = False
+        self.shutdown_channel = Queue()
 
         # Used to keep track of the current position in the IO buffers
         self.out_buf_offset = 0
@@ -111,7 +116,7 @@ class HyperDash:
 
 
     @inlineCallbacks
-    def cleanup(self, exit_status):
+    def cleanup_wamp(self, exit_status):
         self.capture_io()
 
         self.server_manager_instance.put_buf(
@@ -121,9 +126,71 @@ class HyperDash:
         yield self.server_manager_instance.cleanup(self.current_sdk_run_uuid)
         reactor.stop()
 
+    def cleanup_http(self, exit_status):
+        self.capture_io()
+        self.server_manager_instance.put_buf(
+            create_run_ended_message(self.current_sdk_run_uuid, exit_status),
+        )
+        self.shutdown_channel.put(True)
+
     def run(self):
         # Create a UUID to uniquely identify this run from the SDK's point of view
         self.current_sdk_run_uuid = str(uuid.uuid4())
+
+        if self.use_http:
+            self.run_http()
+        else:
+            self.run_wamp()
+
+    def run_http(self):
+        def network_loop():
+            while True:
+                if self.shutdown_channel.qsize() != 0:
+                    self.server_manager_instance.tick(self.current_sdk_run_uuid)
+                    return
+                else:
+                    self.server_manager_instance.tick(self.current_sdk_run_uuid)
+                    time.sleep(1)
+        
+        def event_loop():
+            while True:
+                try:
+                    self.capture_io()
+                    exited_cleanly, is_done = self.code_runner.is_done()
+                    if is_done:
+                        self.programmatic_exit = True
+                        if exited_cleanly:
+                            self.cleanup_http("success")
+                        else:
+                            self.cleanup_http("failure")
+                        return
+                except Exception as e:
+                    self.print_out(e)
+                    self.print_err(e)
+                    self.cleanup_http("failure")
+                    raise
+
+        # Create run_start message before starting any threads to make sure that the
+        # run_started message always precedes any log messages
+        self.server_manager_instance.put_buf(
+            create_run_started_message(self.current_sdk_run_uuid, self.job_name),
+        )
+
+        code_thread = Thread(target=self.code_runner.run)
+        network_thread = Thread(target=network_loop)
+        event_loop_thread = Thread(target=event_loop)
+
+        event_loop_thread.start()        
+        network_thread.start()
+        code_thread.start()
+
+        code_thread.join()
+        event_loop_thread.join()
+        network_thread.join()
+
+        # TODO: Handle CTRL+C
+
+    def run_wamp(self):
 
         def user_thread():
             # Twisted callInThread API does not support the daemon flag, so we
@@ -144,14 +211,14 @@ class HyperDash:
                 if is_done:
                     self.programmatic_exit = True
                     if exited_cleanly:
-                        yield self.cleanup("success")
+                        yield self.cleanup_wamp("success")
                     else:
-                        yield self.cleanup("failure")
+                        yield self.cleanup_wamp("failure")
                     return
             except Exception as e:
                 self.print_out(e)
                 self.print_err(e)
-                yield self.cleanup("failure")
+                yield self.cleanup_wamp("failure")
                 raise
 
         # Network loop is separated from the main event loop so that slow network
@@ -184,7 +251,7 @@ class HyperDash:
             event_loop.stop()
             network_loop.stop()
             # Best-effort cleanup, if we return a deferred the process hangs
-            # and never exists. This is ok though because on the off chance
+            # and never exits. This is ok though because on the off chance
             # it doesn't make it through we'll catch it when the heartbeat
             # stops coming through
             if not self.programmatic_exit:
