@@ -1,7 +1,6 @@
 # Python 2/3 compatibility
 from __future__ import absolute_import, division, print_function, unicode_literals
 from threading import Thread
-from queue import Queue
 
 import json
 import logging
@@ -12,6 +11,7 @@ import uuid
 from twisted.internet import reactor
 from twisted.internet.task import LoopingCall
 from autobahn.twisted.wamp import ApplicationSession, ApplicationRunner
+from six.moves import queue
 from twisted.internet.defer import inlineCallbacks
 
 from .sdk_message import create_run_started_message
@@ -65,7 +65,7 @@ class HyperDash:
         self.use_http = use_http
         self.custom_api_key_getter = custom_api_key_getter
         self.programmatic_exit = False
-        self.shutdown_channel = Queue()
+        self.shutdown_channel = queue()
 
         # Used to keep track of the current position in the IO buffers
         self.out_buf_offset = 0
