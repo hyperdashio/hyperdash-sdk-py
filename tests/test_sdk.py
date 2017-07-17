@@ -1,2 +1,2 @@
-def test_example():
+def test_sdk_example():
     assert True == True
