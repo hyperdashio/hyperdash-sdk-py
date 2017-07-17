@@ -233,7 +233,7 @@ class HyperDash:
                 self.print_out(e)
                 self.print_err(e)
                 self.cleanup_http("failure")
-                raise
+                sys.exit(1)
 
     def run_wamp(self):
 
