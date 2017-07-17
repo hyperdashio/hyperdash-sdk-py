@@ -25,5 +25,5 @@ def monitor_cell(line, cell):
 
     @monitor(line, use_http=True)
     def wrapped():
-        exec(cell)
+        exec(cell) in globals(), locals()
     wrapped()
