@@ -59,7 +59,7 @@ def monitor(model_name, use_http=False, api_key_getter=None):
                     ServerManagerHTTP if use_http else ServerManagerWAMP,
                     out,
                     (old_out, old_err,),
-                    use_http=True,
+                    use_http=use_http,
                     custom_api_key_getter=api_key_getter,
                 )
                 hyper_dash.run()

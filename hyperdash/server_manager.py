@@ -209,7 +209,7 @@ class ServerManagerHTTP(ServerManagerBase):
                 self.out_buf.appendleft(message)
                 return False
 
-    def send_message(self, message, raise_exception=True):
+    def send_message(self, message, raise_exceptions=True):
         try:
             return self.s.post(
                 get_http_url(),

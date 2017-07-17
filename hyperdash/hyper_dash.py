@@ -214,17 +214,41 @@ class HyperDash:
 
         code_thread = Thread(target=self.code_runner.run)
         network_thread = Thread(target=network_loop)
-        event_loop_thread = Thread(target=event_loop)
 
-        event_loop_thread.start()        
+        # Daemonize them so they don't impede shutdown if the user
+        # keyboard interrupts
+        code_thread.daemon=True
+        network_thread.daemon=True
+      
         network_thread.start()
         code_thread.start()
 
-        code_thread.join()
-        event_loop_thread.join()
-        network_thread.join()
-
-        # TODO: Handle CTRL+C
+        # Event loop
+        while True:
+            try:
+                self.capture_io()
+                exited_cleanly, is_done = self.code_runner.is_done()
+                if is_done:
+                    self.programmatic_exit = True
+                    if exited_cleanly:
+                        self.cleanup_http("success")
+                    else:
+                        self.cleanup_http("failure")
+                    return
+                time.sleep(1)
+            except (KeyboardInterrupt, SystemExit):
+                # TODO: Set low timeout here
+                self.server_manager_instance.send_message(
+                    create_run_ended_message(self.current_sdk_run_uuid, "user_canceled"),
+                    raise_exceptions=False
+                )
+                import sys
+                sys.exit(0)
+            except Exception as e:
+                self.print_out(e)
+                self.print_err(e)
+                self.cleanup_http("failure")
+                raise
 
     def run_wamp(self):
 
