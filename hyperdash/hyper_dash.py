@@ -5,6 +5,7 @@ from queue import Queue
 
 import json
 import logging
+import sys
 import time
 import uuid
 
@@ -150,10 +151,11 @@ class HyperDash:
 
     def run_http(self):
         """
-        run_http works by spinning up three separate threads:
+        run_http works using three separate threads:
             1) code_runner thread which runs the user's code
             2) network_thread which does blocking I/O with the server
-            3) event_loop thread which runs the SDK's main event loop
+            3) event_loop thread which runs the SDK's main event loop (this is
+               just the main thread)
 
         We require the event loop and network loop to be in separate threads
         because otherwise slow responses from the server could inhibit the
@@ -192,25 +194,6 @@ class HyperDash:
                 else:
                     self.server_manager_instance.tick(self.current_sdk_run_uuid)
                     time.sleep(1)
-        
-        def event_loop():
-            while True:
-                try:
-                    self.capture_io()
-                    exited_cleanly, is_done = self.code_runner.is_done()
-                    if is_done:
-                        self.programmatic_exit = True
-                        if exited_cleanly:
-                            self.cleanup_http("success")
-                        else:
-                            self.cleanup_http("failure")
-                        return
-                except Exception as e:
-                    self.print_out(e)
-                    self.print_err(e)
-                    self.cleanup_http("failure")
-                    raise
-                time.sleep(1)
 
         code_thread = Thread(target=self.code_runner.run)
         network_thread = Thread(target=network_loop)
@@ -236,14 +219,16 @@ class HyperDash:
                         self.cleanup_http("failure")
                     return
                 time.sleep(1)
+            # Handle Ctrl+C
             except (KeyboardInterrupt, SystemExit):
                 # TODO: Set low timeout here
+                # 
                 self.server_manager_instance.send_message(
                     create_run_ended_message(self.current_sdk_run_uuid, "user_canceled"),
                     raise_exceptions=False
                 )
-                import sys
-                sys.exit(0)
+                # code_thread and network_thread are daemons so they won't impede this
+                sys.exit(130)
             except Exception as e:
                 self.print_out(e)
                 self.print_err(e)
