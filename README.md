@@ -8,6 +8,7 @@ The Hyperdash Python SDK is the official SDK for [Hyperdash.io](https://hyperdas
 
 ## Usage
 
+### Standalone script
 Import the monitor function, and apply it as a decorator to a function that runs your machine learning job. The only argument you need to pass to the monitor function is the name of the model that you're training.
 
 ```
@@ -31,6 +32,29 @@ Once you've imported our library, make sure your API key is available in the HYP
 That's it! Open the Hyperdash mobile app and you should see your logs start to stream in!
 
 Don't have an API key? Run `hyperdash signup` to get one!
+
+### IPython/Jupyter Notebook
+
+Hyperdash works in IPython/Jupyter notebooks as well. In fact, you can use the exact same code from the previous section in a Jupyter notebook and it will work just fine.
+
+However, if you'd rather have Hyperdash monitor the execution of a specific Jupyter cell, as opposed to a decorated function, you can use our custom IPython magic. Example:
+
+```
+Cell 1
+ ___________________________________________________________
+|  from hyperdash import monitor_cell                       |
+|___________________________________________________________|
+
+Cell 2
+ __________________________________________________________
+|  %% monitor_cell                                         |
+|  print("Epoch 1, accuracy: 50%")                         |
+|  time.sleep(2)                                           |
+|  print("Epoch 2, accuracy: 75%")                         |
+|  time.sleep(2)                                           |
+|  print("Epoch 3, accuracy: 100%")                        |
+|__________________________________________________________|
+```
 
 ### API key storage
 
