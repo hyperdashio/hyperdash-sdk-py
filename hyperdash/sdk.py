@@ -8,7 +8,8 @@ import sys
 from .code_runner import CodeRunner
 from .hyper_dash import HyperDash
 from .io_buffer import IOBuffer
-from .server_manager import ServerManager
+from .server_manager import ServerManagerHTTP
+from .server_manager import ServerManagerWAMP
 
 import certifi
 
@@ -18,7 +19,7 @@ import certifi
 # so we use threads for now.
 
 
-def monitor(model_name, api_key_getter=None):
+def monitor(model_name, use_http=False, api_key_getter=None):
     # Needs to happen as soon as possible so we put it here
     fix_certificate_authorities()
 
@@ -55,9 +56,10 @@ def monitor(model_name, api_key_getter=None):
                 hyper_dash = HyperDash(
                     model_name,
                     code_runner,
-                    ServerManager,
+                    ServerManagerHTTP if use_http else ServerManagerWAMP,
                     out,
                     (old_out, old_err,),
+                    use_http=use_http,
                     custom_api_key_getter=api_key_getter,
                 )
                 hyper_dash.run()
