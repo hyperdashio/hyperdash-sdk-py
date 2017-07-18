@@ -1,9 +1,9 @@
-from six import StringIO
-from mock import patch, Mock
-from nose.tools import assert_dict_contains_subset, assert_list_equal, assert_true
-import requests
 import json
 import time
+
+from six import StringIO
+from mock import patch
+import requests
 
 from hyperdash import monitor
 from mocks import init_mock_server
@@ -22,15 +22,15 @@ class TestSDK(object):
             response.send_header('Content-Type', 'application/json; charset=utf-8')
             response.end_headers()
 
-            # Add response content.
+            # Add response content. In this case, we use the exact same response for
+            # all messages from the SDK because the current implementation ignores the
+            # body of the response unless there is an error.
             response_content = json.dumps({})
 
             response.wfile.write(response_content.encode('utf-8'))
 
         request_handle_dict[("POST", "/api/v1/sdk/http")] = sdk_message
 
-    # The server will return the exact same response for every message from the
-    # SDK in this test: a 200 with an empty JSON object.
     def test_monitor(self):
         logs = [
             "Beginning machine learning...",
