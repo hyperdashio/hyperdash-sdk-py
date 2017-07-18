@@ -50,4 +50,3 @@ class TestSDK(object):
             for log in logs:
                 assert log in captured_out
             assert "error" not in captured_out
-            
