@@ -25,7 +25,7 @@ class TestCLI(object):
             # Add response content.
             response_content = json.dumps({
                 "user_uuid": "72a84fc0-b272-480a-807d-fd4a40ee2a66",
-                "api_key":"FI2fKYloUzqy2C/IK/pLR8xHeJpn7ucwLFgCBAZNhf0=",
+                "api_key": DEFAULT_API_KEY,
             })
             response.wfile.write(response_content.encode('utf-8'))
 
@@ -71,7 +71,44 @@ class TestCLI(object):
             return vals[args]
 
         with patch('hyperdash_cli.cli.get_input', Mock(side_effect=side_effect)), patch('sys.stdout', new=StringIO()) as fake_out:
-            hyperdash_cli.cli.signup()
+            hyperdash_cli.signup()
 
-        assert_true("Congratulations on signing up!" in fake_out.getvalue())
-        assert_true(DEFAULT_API_KEY in fake_out.getvalue())
+        expected_output = [
+            "Trying to sign you up now...",
+            "Congratulations on signing up!",
+            "Your API key is: {}".format(DEFAULT_API_KEY),
+            "We stored your API key in",
+            "If you want to see Hyperdash in action, run `hyperdash demo`",
+            "and then install our mobile app to monitor your job in realtime.",
+        ]
+        for expected in expected_output:
+            assert_true(expected in fake_out.getvalue())
+
+    def test_login(self):
+        vals = {
+            ("Email address: ", ): "user@email.com",
+            ("Password: ", True): "Password",
+        }
+        def side_effect(*args):
+            return vals[args]
+
+        with patch('hyperdash_cli.cli.get_input', Mock(side_effect=side_effect)), patch('sys.stdout', new=StringIO()) as fake_out:
+            hyperdash_cli.login()
+
+        expected_output = [
+            "Successfully logged in!",
+            "We also installed: {} as your default API key".format(DEFAULT_API_KEY),
+        ]
+        for expected in expected_output:
+            assert_true(expected in fake_out.getvalue())
+
+    def test_keys(self):
+        with patch('sys.stdout', new=StringIO()) as fake_out:
+            hyperdash_cli.keys()
+
+        expected_output = [
+            "Below are the API Keys associated with you account:",
+            "1) {}".format(DEFAULT_API_KEY),
+        ]
+        for expected in expected_output:
+            assert_true(expected in fake_out.getvalue())

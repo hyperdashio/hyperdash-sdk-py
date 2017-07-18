@@ -55,7 +55,7 @@ def signup():
     """.format(get_hyperdash_json_home_path())
     )
 
-    login(email, password)
+    _login(email, password)
 
 
 def demo():
@@ -111,12 +111,15 @@ def demo():
     train_dogs_vs_cats()
 
 
-def login(email=None, password=None):
-    if not email:
-        email = get_input("Email Address:")
-    if not password:
-        password = get_input("Password:", True)
+def login():
+    email = get_input("Email address: ")
+    password = get_input("Password: ", True)
+    success, default_api_key = _login(email, password)
+    if success:
+        print("Successfully logged in! We also installed: {} as your default API key".format(default_api_key))
 
+
+def _login(email, password):
     try:
         response = post_json("/sessions", {
             'email': email,
@@ -124,30 +127,29 @@ def login(email=None, password=None):
         })
     except Exception as e:
         print("Sorry we were unable to log you in, please try again.")
-        return
+        return False, None
 
     response_body = response.json()
     if response.status_code == 422 or response.status_code == 401:
         message = response_body.get('message')
         if message:
             print(message)
-            return
+            return False, None
 
     access_token = response_body['access_token']
     config = {'access_token': access_token}
-    # TODO: Delete this?    
-    write_hyperdash_json_file(config)
 
     # Add API key if available
     api_keys = get_api_keys(access_token)
-    default_api_key = api_keys[0]
     if api_keys and len(api_keys) > 0:
-        config['api_key'] = api_keys[0]
+        default_api_key = api_keys[0]    
+        config['api_key'] = default_api_key
     else:
-        print("Login successful, but we were unable to install a default API key.")
+        print("Login failure: We were unable to retrieve your default API key.")
+        return False, None
 
     write_hyperdash_json_file(config)
-    print("Successfully logged in! We also installed: {} as your default API key".format(default_api_key))
+    return True, default_api_key
 
 
 def get_api_keys(access_token):
@@ -182,7 +184,7 @@ def keys():
     if api_keys is None:
         return
 
-    print("\nBelow are the API Keys associated with you account\n\n")
+    print("\nBelow are the API Keys associated with you account:\n\n")
 
     for i, api_key in enumerate(api_keys):
         print("    {}) {}".format(i+1, api_key))
