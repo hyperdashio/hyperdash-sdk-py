@@ -3,6 +3,7 @@ from threading import Thread
 import os
 import requests
 import socket
+import time
 
 handle_request_cache = dict()
 
@@ -31,6 +32,8 @@ def init_mock_server():
     mock_server_thread = Thread(target=mock_server.serve_forever)
     mock_server_thread.setDaemon(True)
     mock_server_thread.start()
+    # Wait for server to start
+    time.sleep(1)
 
     # Override production server
     server = 'http://localhost:{}'.format(port)
