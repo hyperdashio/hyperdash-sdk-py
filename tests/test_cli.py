@@ -1,20 +1,30 @@
+import json
+import os
+
+import requests
+
 from six import StringIO
 from mock import patch, Mock
 from nose.tools import assert_in
-import requests
-import json
 
 import hyperdash_cli
 from mocks import init_mock_server
+from hyperdash.constants import get_hyperdash_json_home_path
 
 DEFAULT_API_KEY = "y9bhlYMBivCu8cBj6SQPAbwjxSqnbR1w23TtR9n9yOM="
+DEFAULT_ACCESS_TOKEN = "72a84fc0-b272-480a-807d-fd4a40ee2a66"
 
 class TestCLI(object):
     @classmethod
     def setup_class(_cls):
         request_handle_dict = init_mock_server()
-        import time
-        time.sleep(10)
+
+        def setup(self):
+            try:
+                # Delete hyperdash.json file between tests
+                os.remove(get_hyperdash_json_home_path())
+            except FileNotFoundError:
+                pass
 
         def user_signup(response):
             # Add response status code.
@@ -105,7 +115,7 @@ class TestCLI(object):
             assert_in(expected, fake_out.getvalue())
 
     def test_keys(self):
-        with patch('sys.stdout', new=StringIO()) as fake_out:
+        with patch('hyperdash_cli.cli.get_access_token_from_file', Mock(return_value=DEFAULT_ACCESS_TOKEN)), patch('sys.stdout', new=StringIO()) as fake_out:
             hyperdash_cli.keys()
 
         expected_output = [
