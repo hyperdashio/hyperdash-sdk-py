@@ -37,7 +37,7 @@ def signup():
         print("Sorry we were unable to sign you up, please try again.")
         return
 
-    response_body = json.loads(response.read())
+    response_body = json.loads(response.read().decode('utf-8'))
     print("Congratulations on signing up!")
     api_key = response_body['api_key']
     print("Your API key is: {}".format(api_key))
@@ -46,7 +46,7 @@ def signup():
         'api_key': api_key
     })
     print("""
-        We stored your API key in {} 
+        We stored your API key in {}
         and we'll use that as the default for future jobs.
 
         If you want to see Hyperdash in action, run `hyperdash demo`
@@ -130,7 +130,7 @@ def login(email=None, password=None):
                 return
         print("Sorry we were unable to log you in, please try again.")
         return
-    response_body = json.loads(response.read())
+    response_body = json.loads(response.read().decode('utf-8'))
     write_hyperdash_json_file({
         'access_token': response_body['access_token'],
     })
@@ -165,19 +165,19 @@ def write_hyperdash_json_file(hyperdash_json):
     except IOError:
         # Open for read/write but will truncate if it already exists
         with open(path, 'w+') as f:
-            write_hyperdash_json_helper(f, hyperdash_json)     
+            write_hyperdash_json_helper(f, hyperdash_json)
 
 
 def write_hyperdash_json_helper(file, hyperdash_json):
     data = file.read()
-            
+
     existing = {}
     if len(data) > 0:
         try:
             existing = json.loads(data)
         except ValueError:
             raise Exception("{} is not valid JSON!".format(get_hyperdash_json_home_path()))
-    
+
     existing.update(hyperdash_json)
 
     # Seek back to beginning before we write
