@@ -5,7 +5,8 @@ import os
 import time
 import json
 
-from six.moves.urllib.request import urlopen
+import requests
+
 from six.moves import input
 
 from hyperdash.constants import get_hyperdash_json_home_path
@@ -16,37 +17,37 @@ from .constants import get_base_url
 
 
 def signup():
-    email = get_input("Email address:")
-    company = get_input("Company (optional):")
-    password = get_input("Password (8 characters or more):", True)
+    email = get_input("Email address: ")
+    company = get_input("Company (optional): ")
+    password = get_input("Password (8 characters or more): ", True)
 
     print("Trying to sign you up now...")
     try:
-        response = post_json("/users", {
+        res = post_json("/users", {
             'email': email,
             'company': company,
             'password': password,
         })
     except Exception as e:
-        if hasattr(e, 'code') and e.code == 422:
-            body = json.loads(e.read())
-            message = body.get('message')
-            if message:
-                print(message)
-                return
         print("Sorry we were unable to sign you up, please try again.")
         return
 
-    response_body = json.loads(response.read())
+    res_body = res.json()
+    if res.status_code != 200:
+        message = res_body.get('message')
+        if message:
+            print(message)
+            return
+
     print("Congratulations on signing up!")
-    api_key = response_body['api_key']
+    api_key = res_body['api_key']
     print("Your API key is: {}".format(api_key))
 
     write_hyperdash_json_file({
         'api_key': api_key
     })
     print("""
-        We stored your API key in {} 
+        We stored your API key in {}
         and we'll use that as the default for future jobs.
 
         If you want to see Hyperdash in action, run `hyperdash demo`
@@ -122,15 +123,16 @@ def login(email=None, password=None):
             'password': password,
         })
     except Exception as e:
-        if hasattr(e, 'code') and (e.code == 422 or e.code == 401):
-            body = json.loads(e.read())
-            message = body.get('message')
-            if message:
-                print(message)
-                return
         print("Sorry we were unable to log you in, please try again.")
         return
-    response_body = json.loads(response.read())
+
+    response_body = response.json()
+    if response.status_code == 422 or response.status_code == 401:
+        message = response_body.get('message')
+        if message:
+            print(message)
+            return
+
     write_hyperdash_json_file({
         'access_token': response_body['access_token'],
     })
@@ -143,9 +145,9 @@ def get_input(prompt, sensitive=False):
 
 
 def post_json(path, data):
-    return urlopen(
+    return requests.post(
         "{}{}".format(get_base_url(), path),
-        bytes(json.dumps(data).encode('utf8')),
+        json=data,
     )
 
 
@@ -165,19 +167,19 @@ def write_hyperdash_json_file(hyperdash_json):
     except IOError:
         # Open for read/write but will truncate if it already exists
         with open(path, 'w+') as f:
-            write_hyperdash_json_helper(f, hyperdash_json)     
+            write_hyperdash_json_helper(f, hyperdash_json)
 
 
 def write_hyperdash_json_helper(file, hyperdash_json):
     data = file.read()
-            
+
     existing = {}
     if len(data) > 0:
         try:
             existing = json.loads(data)
         except ValueError:
             raise Exception("{} is not valid JSON!".format(get_hyperdash_json_home_path()))
-    
+
     existing.update(hyperdash_json)
 
     # Seek back to beginning before we write

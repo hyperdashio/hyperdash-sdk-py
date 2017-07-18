@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+set -e
+
+# Set time to UTC
+export TZ='Universal Time'
+
+helptext() {
+  echo "Usage: ./run <command>"
+  echo ""
+  echo "Available commands are:"
+  echo "  test   Run go test suite"
+  echo ""
+}
+
+test() {
+  nosetests --verbosity=2 tests
+}
+
+[[ $@ ]] || { helptext; exit 0; }
+
+case "$1" in
+  help) helptext
+  ;;
+  test) test
+  ;;
+  *)
+    helptext
+    exit 1
+  ;;
+esac

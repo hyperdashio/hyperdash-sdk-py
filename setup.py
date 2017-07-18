@@ -8,11 +8,12 @@ setup(
     packages=['hyperdash', 'hyperdash_cli'],
     install_requires=[
         'autobahn',
-        'Twisted',
+        'certifi',
         'pyOpenSSL',
+        'requests',
         'service_identity',
         'six',
-        'certifi',
+        'Twisted',
     ],
     entry_points={
         'console_scripts': ['hyperdash = hyperdash_cli.cli:main']

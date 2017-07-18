@@ -1,0 +1,68 @@
+version: 2
+
+jobs:
+
+  "Python 3.6.1":
+    docker:
+      - image: circleci/python:3.6.1
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - run:
+          name: Install Dependencies
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install -r requirements_dev.txt
+
+      - run:
+          name: Run Tests
+          command: |
+            . venv/bin/activate
+            ./run test
+
+  "Python 2.7.13":
+    docker:
+      - image: circleci/python:2.7.13
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - run:
+          name: Install Dependencies
+          command: |
+            python -m virtualenv venv
+            . venv/bin/activate
+            pip install -r requirements_dev.txt
+
+      - run:
+          name: Run Tests
+          command: |
+            . venv/bin/activate
+            ./run test
+
+  "Python 3.5.3":
+    docker:
+      - image: circleci/python:3.5.3
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - run:
+          name: Install Dependencies
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install -r requirements_dev.txt
+
+      - run:
+          name: Run Tests
+          command: |
+            . venv/bin/activate
+            ./run test
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - "Python 3.6.1"
+      - "Python 2.7.13"
+      - "Python 3.5.3"
