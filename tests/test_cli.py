@@ -13,6 +13,7 @@ class TestCLI(object):
     @classmethod
     def setup_class(_cls):
         request_handle_dict = init_mock_server()
+        import time
         time.sleep(10)
 
         def user_signup(response):
