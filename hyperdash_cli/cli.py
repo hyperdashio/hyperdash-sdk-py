@@ -37,7 +37,7 @@ def signup():
         print("Sorry we were unable to sign you up, please try again.")
         return
 
-    response_body = json.loads(response.read())
+    response_body = json.loads(response.read().decode('utf-8'))
     print("Congratulations on signing up!")
     api_key = response_body['api_key']
     print("Your API key is: {}".format(api_key))
@@ -46,7 +46,7 @@ def signup():
         'api_key': api_key
     })
     print("""
-        We stored your API key in {} 
+        We stored your API key in {}
         and we'll use that as the default for future jobs.
 
         If you want to see Hyperdash in action, run `hyperdash demo`
@@ -130,16 +130,70 @@ def login(email=None, password=None):
                 return
         print("Sorry we were unable to log you in, please try again.")
         return
+
+    # Compose config
     response_body = json.loads(response.read())
-    write_hyperdash_json_file({
-        'access_token': response_body['access_token'],
-    })
+    access_token = response_body['access_token']
+    config = {
+        'access_token': access_token,
+    }
+
+    # Add API key if available
+    api_keys = get_api_keys(access_token)
+    if len(api_keys):
+        config['api_key'] = api_key[0]
+
+    write_hyperdash_json_file(config)
     print("Successfully logged in!")
+
+
+def get_api_keys(access_token):
+    try:
+        response = get_json("/sessions/{}/tokens".format(access_token))
+        return json.loads(response.read()).get("api_keys")
+
+    except Exception as e:
+        print(e)
+        if hasattr(e, 'code') and (e.code == 422 or e.code == 401):
+            body = json.loads(e.read())
+            message = body.get('message')
+            if message:
+                print(message)
+        else:
+            print("Request failed. Please try again.")
+        return
+
+
+def tokens():
+    from_file = get_access_token_from_file()
+    from_env = get_access_token_from_env()
+    access_token = from_file or from_env
+
+    if not access_token:
+        print("Not authorized.\n\n"
+              "`hyperdash tokens` is an authorized request available only to logged in users.\n"
+              "Login with `hyperdash login` to authenticate as a user.\n\n")
+        return
+
+    api_keys = get_api_keys(access_token)
+    if api_keys is None:
+        return
+
+    print("\nBelow are the API Keys associated with you account\n\n")
+
+    for api_key in api_keys:
+        print("    {}".format(api_key))
+
+    print("\n")
 
 def get_input(prompt, sensitive=False):
     if sensitive:
         return getpass(prompt)
-    return input(prompt)
+    return moves.input(prompt)
+
+
+def get_json(path):
+    return urlopen("{}{}".format(get_base_url(), path))
 
 
 def post_json(path, data):
@@ -165,19 +219,19 @@ def write_hyperdash_json_file(hyperdash_json):
     except IOError:
         # Open for read/write but will truncate if it already exists
         with open(path, 'w+') as f:
-            write_hyperdash_json_helper(f, hyperdash_json)     
+            write_hyperdash_json_helper(f, hyperdash_json)
 
 
 def write_hyperdash_json_helper(file, hyperdash_json):
     data = file.read()
-            
+
     existing = {}
     if len(data) > 0:
         try:
             existing = json.loads(data)
         except ValueError:
             raise Exception("{} is not valid JSON!".format(get_hyperdash_json_home_path()))
-    
+
     existing.update(hyperdash_json)
 
     # Seek back to beginning before we write
@@ -185,6 +239,26 @@ def write_hyperdash_json_helper(file, hyperdash_json):
     file.write(json.dumps(existing))
     file.write("\n")
     file.truncate()
+
+
+def get_access_token_from_file():
+    parsed = None
+    for path in get_hyperdash_json_paths():
+        try:
+            with open(path, "r") as f:
+                try:
+                    parsed = json.load(f)
+                except ValueError:
+                    print("hyperdash.json is not valid JSON")
+                    return None
+        except IOError:
+            continue
+
+    return parsed.get('access_token') if parsed else None
+
+
+def get_access_token_from_env():
+    return os.environ.get("HYPERDASH_ACCESS_TOKEN")
 
 
 def get_api_key_from_file():
@@ -223,6 +297,9 @@ def main():
 
     demo_parser = subparsers.add_parser('login')
     demo_parser.set_defaults(func=login)
+
+    demo_parser = subparsers.add_parser('tokens')
+    demo_parser.set_defaults(func=tokens)
 
     args = parser.parse_args()
     args.func()
