@@ -57,5 +57,4 @@ class TestCLI(object):
         with patch('hyperdash_cli.cli.get_input', Mock(side_effect=side_effect)), patch('sys.stdout', new=StringIO()) as fake_out:
             hyperdash_cli.cli.signup()
 
-        a = fake_out.getvalue()
-        assert a == "", a
+        assert_true("Congratulations on signing up!" in fake_out.getvalue())
