@@ -1,6 +1,6 @@
 from six import StringIO
 from mock import patch, Mock
-from nose.tools import assert_dict_contains_subset, assert_list_equal, assert_true
+from nose.tools import assert_in
 import requests
 import json
 
@@ -82,7 +82,7 @@ class TestCLI(object):
             "and then install our mobile app to monitor your job in realtime.",
         ]
         for expected in expected_output:
-            assert_true(expected in fake_out.getvalue())
+            assert_in(expected, fake_out.getvalue())
 
     def test_login(self):
         vals = {
@@ -100,7 +100,7 @@ class TestCLI(object):
             "We also installed: {} as your default API key".format(DEFAULT_API_KEY),
         ]
         for expected in expected_output:
-            assert_true(expected in fake_out.getvalue())
+            assert_in(expected, fake_out.getvalue())
 
     def test_keys(self):
         with patch('sys.stdout', new=StringIO()) as fake_out:
@@ -111,4 +111,4 @@ class TestCLI(object):
             "1) {}".format(DEFAULT_API_KEY),
         ]
         for expected in expected_output:
-            assert_true(expected in fake_out.getvalue())
+            assert_in(expected, fake_out.getvalue())
