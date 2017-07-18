@@ -38,8 +38,7 @@ class TestCLI(object):
 
             # Add response content.
             response_content = json.dumps({
-                "user_uuid": "72a84fc0-b272-480a-807d-fd4a40ee2a66",
-                "api_key":"FI2fKYloUzqy2C/IK/pLR8xHeJpn7ucwLFgCBAZNhf0=",
+                "access_token": "72a84fc0-b272-480a-807d-fd4a40ee2a66"
             })
             response.wfile.write(response_content.encode('utf-8'))
 
