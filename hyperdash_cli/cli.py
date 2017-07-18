@@ -5,7 +5,8 @@ import os
 import time
 import json
 
-from six.moves.urllib.request import urlopen
+import requests
+
 from six.moves import input
 
 from hyperdash.constants import get_hyperdash_json_home_path
@@ -22,24 +23,24 @@ def signup():
 
     print("Trying to sign you up now...")
     try:
-        response = post_json("/users", {
+        res = post_json("/users", {
             'email': email,
             'company': company,
             'password': password,
         })
     except Exception as e:
-        if hasattr(e, 'code') and e.code == 422:
-            body = json.loads(e.read())
-            message = body.get('message')
-            if message:
-                print(message)
-                return
         print("Sorry we were unable to sign you up, please try again.")
         return
 
-    response_body = json.loads(response.read().decode('utf-8'))
+    res_body = res.json()
+    if res.status_code != 200:
+        message = res_body.get('message')
+        if message:
+            print(message)
+            return
+
     print("Congratulations on signing up!")
-    api_key = response_body['api_key']
+    api_key = res_body['api_key']
     print("Your API key is: {}".format(api_key))
 
     write_hyperdash_json_file({
@@ -122,15 +123,16 @@ def login(email=None, password=None):
             'password': password,
         })
     except Exception as e:
-        if hasattr(e, 'code') and (e.code == 422 or e.code == 401):
-            body = json.loads(e.read())
-            message = body.get('message')
-            if message:
-                print(message)
-                return
         print("Sorry we were unable to log you in, please try again.")
         return
-    response_body = json.loads(response.read().decode('utf-8'))
+
+    response_body = response.json()
+    if response.status_code == 422 or response.status_code == 401:
+        message = response_body.get('message')
+        if message:
+            print(message)
+            return
+
     write_hyperdash_json_file({
         'access_token': response_body['access_token'],
     })
@@ -143,9 +145,9 @@ def get_input(prompt, sensitive=False):
 
 
 def post_json(path, data):
-    return urlopen(
+    return requests.post(
         "{}{}".format(get_base_url(), path),
-        bytes(json.dumps(data).encode('utf8')),
+        json=data,
     )
 
 
