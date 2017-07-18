@@ -167,14 +167,14 @@ def get_api_keys(access_token):
         return None
 
 
-def tokens():
+def keys():
     from_file = get_access_token_from_file()
     from_env = get_access_token_from_env()
     access_token = from_file or from_env
 
     if not access_token:
         print("Not authorized.\n\n"
-              "`hyperdash tokens` is an authorized request available only to logged in users.\n"
+              "`hyperdash keys` is an authorized request available only to logged in users.\n"
               "Login with `hyperdash login` to authenticate as a user.\n\n")
         return
 
@@ -300,7 +300,7 @@ def main():
     demo_parser = subparsers.add_parser('login')
     demo_parser.set_defaults(func=login)
 
-    demo_parser = subparsers.add_parser('tokens')
+    demo_parser = subparsers.add_parser('keys')
     demo_parser.set_defaults(func=tokens)
 
     args = parser.parse_args()
