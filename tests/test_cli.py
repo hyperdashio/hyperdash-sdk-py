@@ -47,9 +47,9 @@ class TestCLI(object):
 
     def test_signup(self):
         vals = {
-            ("Email address:", ): "user@email.com",
-            ("Company (optional):", ): "Company",
-            ("Password (8 characters or more):", True): "Password",
+            ("Email address: ", ): "user@email.com",
+            ("Company (optional): ", ): "Company",
+            ("Password (8 characters or more): ", True): "Password",
         }
         def side_effect(*args):
             return vals[args]
