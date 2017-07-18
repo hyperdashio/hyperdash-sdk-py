@@ -301,7 +301,7 @@ def main():
     demo_parser.set_defaults(func=login)
 
     demo_parser = subparsers.add_parser('keys')
-    demo_parser.set_defaults(func=tokens)
+    demo_parser.set_defaults(func=keys)
 
     args = parser.parse_args()
     args.func()
