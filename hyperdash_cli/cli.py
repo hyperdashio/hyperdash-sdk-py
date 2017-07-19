@@ -55,7 +55,7 @@ def signup():
     """.format(get_hyperdash_json_home_path())
     )
 
-    login(email, password)
+    _login(email, password)
 
 
 def demo():
@@ -111,12 +111,15 @@ def demo():
     train_dogs_vs_cats()
 
 
-def login(email=None, password=None):
-    if not email:
-        email = get_input("Email Address:")
-    if not password:
-        password = get_input("Password:", True)
+def login():
+    email = get_input("Email address: ")
+    password = get_input("Password: ", True)
+    success, default_api_key = _login(email, password)
+    if success:
+        print("Successfully logged in! We also installed: {} as your default API key".format(default_api_key))
 
+
+def _login(email, password):
     try:
         response = post_json("/sessions", {
             'email': email,
@@ -124,25 +127,78 @@ def login(email=None, password=None):
         })
     except Exception as e:
         print("Sorry we were unable to log you in, please try again.")
-        return
+        return False, None
 
     response_body = response.json()
     if response.status_code == 422 or response.status_code == 401:
         message = response_body.get('message')
         if message:
             print(message)
-            return
+            return False, None
 
-    write_hyperdash_json_file({
-        'access_token': response_body['access_token'],
-    })
-    print("Successfully logged in!")
+    access_token = response_body['access_token']
+    config = {'access_token': access_token}
+
+    # Add API key if available
+    api_keys = get_api_keys(access_token)
+    if api_keys and len(api_keys) > 0:
+        default_api_key = api_keys[0]    
+        config['api_key'] = default_api_key
+    else:
+        print("Login failure: We were unable to retrieve your default API key.")
+        return False, None
+
+    write_hyperdash_json_file(config)
+    return True, default_api_key
+
+
+def get_api_keys(access_token):
+    try:
+        res = get_json("/users/api_keys", headers={
+            'authorization': access_token,
+        })
+        res_json = res.json()
+        if res.status_code == 422 or res.status_code == 401:
+            message = res_json.get('message')
+            if message:
+                print(message)
+            return None
+        return res_json.get('api_keys')
+    except Exception as e:
+        print("Sorry we were unable to retrieve your API keys, please try again.")
+        return None
+
+
+def keys():
+    from_file = get_access_token_from_file()
+    from_env = get_access_token_from_env()
+    access_token = from_file or from_env
+
+    if not access_token:
+        print("Not authorized.\n\n"
+              "`hyperdash keys` is an authorized request available only to logged in users.\n"
+              "Login with `hyperdash login` to authenticate as a user.\n\n")
+        return
+
+    api_keys = get_api_keys(access_token)
+    if api_keys is None:
+        return
+
+    print("\nBelow are the API Keys associated with you account:\n\n")
+
+    for i, api_key in enumerate(api_keys):
+        print("    {}) {}".format(i+1, api_key))
+
+    print("\n")
 
 def get_input(prompt, sensitive=False):
     if sensitive:
         return getpass(prompt)
     return input(prompt)
 
+
+def get_json(path, **kwargs):
+    return requests.get("{}{}".format(get_base_url(), path), **kwargs)
 
 def post_json(path, data):
     return requests.post(
@@ -189,6 +245,26 @@ def write_hyperdash_json_helper(file, hyperdash_json):
     file.truncate()
 
 
+def get_access_token_from_file():
+    parsed = None
+    for path in get_hyperdash_json_paths():
+        try:
+            with open(path, "r") as f:
+                try:
+                    parsed = json.load(f)
+                except ValueError:
+                    print("hyperdash.json is not valid JSON")
+                    return None
+        except IOError:
+            continue
+
+    return parsed.get('access_token') if parsed else None
+
+
+def get_access_token_from_env():
+    return os.environ.get("HYPERDASH_ACCESS_TOKEN")
+
+
 def get_api_key_from_file():
     parsed = None
     for path in get_hyperdash_json_paths():
@@ -225,6 +301,9 @@ def main():
 
     demo_parser = subparsers.add_parser('login')
     demo_parser.set_defaults(func=login)
+
+    demo_parser = subparsers.add_parser('keys')
+    demo_parser.set_defaults(func=keys)
 
     args = parser.parse_args()
     args.func()
