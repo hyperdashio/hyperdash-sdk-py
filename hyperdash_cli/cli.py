@@ -59,7 +59,7 @@ def signup():
 def demo():
     from_file = get_api_key_from_file()
     from_env = get_api_key_from_env()
-    api_key = from_file or from_env
+    api_key = from_env or from_file
 
     if not api_key:
         print("""
