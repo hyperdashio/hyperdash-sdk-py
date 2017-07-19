@@ -47,7 +47,7 @@ Cell 1
 
 Cell 2
  ___________________________________________________________
-|  %% monitor_cell                                          |
+|  %% monitor_cell dogs vs. cats                            |
 |  print("Epoch 1, accuracy: 50%")                          |
 |  time.sleep(2)                                            |
 |  print("Epoch 2, accuracy: 75%")                          |
