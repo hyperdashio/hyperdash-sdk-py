@@ -18,14 +18,12 @@ from .constants import get_base_url
 
 def signup():
     email = get_input("Email address: ")
-    company = get_input("Company (optional): ")
     password = get_input("Password (8 characters or more): ", True)
 
     print("Trying to sign you up now...")
     try:
         res = post_json("/users", {
             'email': email,
-            'company': company,
             'password': password,
         })
     except Exception as e:
