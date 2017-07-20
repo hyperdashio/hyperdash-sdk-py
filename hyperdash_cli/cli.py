@@ -18,14 +18,12 @@ from .constants import get_base_url
 
 def signup():
     email = get_input("Email address: ")
-    company = get_input("Company (optional): ")
     password = get_input("Password (8 characters or more): ", True)
 
     print("Trying to sign you up now...")
     try:
         res = post_json("/users", {
             'email': email,
-            'company': company,
             'password': password,
         })
     except Exception as e:
@@ -61,7 +59,7 @@ def signup():
 def demo():
     from_file = get_api_key_from_file()
     from_env = get_api_key_from_env()
-    api_key = from_file or from_env
+    api_key = from_env or from_file
 
     if not api_key:
         print("""

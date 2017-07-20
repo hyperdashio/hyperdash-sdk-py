@@ -99,9 +99,9 @@ class ServerManagerBase(Borg):
             self.log_error_once("Unable to detect API key in hyperdash.json or HYPERDASH_API_KEY environment variable")
 
         if from_file and from_env:
-            self.log_error_once("Found API key in hyperdash.json AND HYPERDASH_API_KEY environment variable. Hyperdash.json will take precedence.")
+            self.log_error_once("Found API key in hyperdash.json AND HYPERDASH_API_KEY environment variable. Environment variable will take precedence.")
 
-        self.api_key = from_file or from_env
+        self.api_key = from_env or from_file
         return self.api_key
 
     def get_api_key_from_file(self):
