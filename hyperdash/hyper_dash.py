@@ -35,26 +35,22 @@ class HyperDash:
         self,
         job_name,
         code_runner,
-        server_manager_class,
+        server_manager,
         io_bufs,
         std_streams,
-        custom_api_key_getter=None,
     ):
         """Initialize the HyperDash class.
 
         args:
             1) job_name: Name of the current running job
             2) code_runner: Instance of CodeRunner
-            3) server_manager_class: Server manager class
+            3) server_manager: ServerManager instance
             4) io_bufs: Tuple in the form of (StringIO(), StringIO(),)
             5) std_streams: Tuple in the form of (StdOut, StdErr)
-            6) custom_api_key_getter: Optional function which when called returns an API key as a string
         """
         self.job_name = job_name
-        self.code_runner = code_runner
-        self.custom_api_key_getter = custom_api_key_getter        
-        self.server_manager_class = server_manager_class
-        self.server_manager_instance = self.server_manager_class(self.custom_api_key_getter)
+        self.code_runner = code_runner    
+        self.server_manager = server_manager
         self.out_buf, self.err_buf = io_bufs
         self.std_out, self.std_err = std_streams
         self.programmatic_exit = False
@@ -99,17 +95,17 @@ class HyperDash:
 
     def print_out(self, s):
         message = create_log_message(self.current_sdk_run_uuid, INFO_LEVEL, s)
-        self.server_manager_instance.put_buf(message)
+        self.server_manager.put_buf(message)
         self.std_out.write(s)
 
     def print_err(self, s):
         message = create_log_message(self.current_sdk_run_uuid, ERROR_LEVEL, s)
-        self.server_manager_instance.put_buf(message)
+        self.server_manager.put_buf(message)
         self.std_err.write(s)
 
     def cleanup_http(self, exit_status):
         self.capture_io()
-        self.server_manager_instance.put_buf(
+        self.server_manager.put_buf(
             create_run_ended_message(self.current_sdk_run_uuid, exit_status),
         )
         self.shutdown_network_channel.put(True)
@@ -120,7 +116,7 @@ class HyperDash:
 
         # Create run_start message before doing any other setup work to make sure that the
         # run_started message always precedes any other messages
-        self.server_manager_instance.put_buf(
+        self.server_manager.put_buf(
             create_run_started_message(self.current_sdk_run_uuid, self.job_name),
         )
 
@@ -167,11 +163,11 @@ class HyperDash:
         def network_loop():
             while True:
                 if self.shutdown_network_channel.qsize() != 0:
-                    self.server_manager_instance.cleanup(self.current_sdk_run_uuid)
+                    self.server_manager.cleanup(self.current_sdk_run_uuid)
                     self.shutdown_main_channel.put(True)
                     return
                 else:
-                    self.server_manager_instance.tick(self.current_sdk_run_uuid)
+                    self.server_manager.tick(self.current_sdk_run_uuid)
                     time.sleep(1)
 
         code_thread = Thread(target=self.code_runner.run)
@@ -208,7 +204,7 @@ class HyperDash:
             except (KeyboardInterrupt, SystemExit):
                 # TODO: Set low timeout here
                 # 
-                self.server_manager_instance.send_message(
+                self.server_manager.send_message(
                     create_run_ended_message(self.current_sdk_run_uuid, "user_canceled"),
                     raise_exceptions=False
                 )

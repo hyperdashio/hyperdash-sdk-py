@@ -2,7 +2,6 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import os
 import sys
 
 from .code_runner import CodeRunner
@@ -49,10 +48,9 @@ def monitor(model_name, api_key_getter=None):
                 hyper_dash = HyperDash(
                     model_name,
                     code_runner,
-                    ServerManagerHTTP,
+                    ServerManagerHTTP(api_key_getter),
                     out,
                     (old_out, old_err,),
-                    custom_api_key_getter=api_key_getter,
                 )
                 return_val = hyper_dash.run()
                 f.callcount -= 1
