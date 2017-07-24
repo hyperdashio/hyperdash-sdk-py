@@ -40,7 +40,7 @@ class TestSDK(object):
         expected_return = "final_result"
 
         with patch('sys.stdout', new=StringIO()) as fake_out:
-            @monitor("test_job", use_http=True)
+            @monitor("test_job")
             def test_job():
                 for log in logs:
                     print(log)
@@ -59,7 +59,7 @@ class TestSDK(object):
         exception_raised = True
         expected_exception = "some_exception"
 
-        @monitor("test_job", use_http=True)
+        @monitor("test_job")
         def test_job():
             time.sleep(2)
             raise Exception(expected_exception)
