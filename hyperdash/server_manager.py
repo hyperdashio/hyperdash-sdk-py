@@ -25,14 +25,7 @@ from .sdk_message import create_heartbeat_message
 __metaclass__ = type
 
 
-class Borg:
-    __shared_state = {}
-
-    def __init__(self):
-        self.__dict__ = self.__shared_state
-
-
-class ServerManagerBase(Borg):
+class ServerManagerBase():
     # TODO: Check type
     def put_buf(self, m):
         self.out_buf.append(m)
@@ -114,7 +107,6 @@ class ServerManagerBase(Borg):
         raise NotImplementedError()
 
     def __init__(self, custom_api_key_getter):
-        Borg.__init__(self)
         self.out_buf = deque()
         self.in_buf = deque()
         self.logger = logging.getLogger("hyperdash.{}".format(__name__))
