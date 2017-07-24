@@ -62,8 +62,9 @@ def monitor(model_name, use_http=True, api_key_getter=None):
                     use_http=use_http,
                     custom_api_key_getter=api_key_getter,
                 )
-                hyper_dash.run()
+                return_val = hyper_dash.run()
                 f.callcount -= 1
+                return return_val
             # Prevent uncaught exceptions from silently being swallowed
             except Exception:
                 raise

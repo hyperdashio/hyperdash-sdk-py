@@ -146,9 +146,9 @@ class HyperDash:
         )
 
         if self.use_http:
-            self.run_http()
+            return self.run_http()
         else:
-            self.run_wamp()
+            return self.run_wamp()
 
     def run_http(self):
         """
@@ -218,11 +218,15 @@ class HyperDash:
                     self.programmatic_exit = True
                     if exited_cleanly:
                         self.cleanup_http("success")
+                        # Block until network loop says its done
+                        self.shutdown_main_channel.get(block=True, timeout=None)
+                        return self.code_runner.get_return_val()
                     else:
                         self.cleanup_http("failure")
-                    # Block until network loop says its done
-                    self.shutdown_main_channel.get(block=True, timeout=None)
-                    return
+                        # Block until network loop says its done
+                        self.shutdown_main_channel.get(block=True, timeout=None)
+                        raise self.code_runner.get_exception()
+
                 time.sleep(1)
             # Handle Ctrl+C
             except (KeyboardInterrupt, SystemExit):
@@ -234,11 +238,6 @@ class HyperDash:
                 )
                 # code_thread and network_thread are daemons so they won't impede this
                 sys.exit(130)
-            except Exception as e:
-                self.print_out(e)
-                self.print_err(e)
-                self.cleanup_http("failure")
-                sys.exit(1)
 
     def run_wamp(self):
 

@@ -37,16 +37,37 @@ class TestSDK(object):
             "Still training...",
             "Done!",
         ]
+        expected_return = "final_result"
 
         with patch('sys.stdout', new=StringIO()) as fake_out:
-            @monitor("test_job", use_http=True)
+            @monitor("test_job")
             def test_job():
                 for log in logs:
                     print(log)
                     time.sleep(2)
+                return expected_return
 
-            test_job()
+            return_val = test_job()
+
+            assert return_val == expected_return
             captured_out = fake_out.getvalue()
             for log in logs:
                 assert log in captured_out
             assert "error" not in captured_out
+
+    def test_monitor_raises_exceptions(self):
+        exception_raised = True
+        expected_exception = "some_exception"
+
+        @monitor("test_job")
+        def test_job():
+            time.sleep(2)
+            raise Exception(expected_exception)
+
+        try:
+            test_job()
+            exception_raised = False
+        except Exception as e:
+            assert str(e) == expected_exception
+        
+        assert exception_raised
