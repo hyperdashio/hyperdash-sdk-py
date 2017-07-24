@@ -19,7 +19,7 @@ import certifi
 # so we use threads for now.
 
 
-def monitor(model_name, use_http=False, api_key_getter=None):
+def monitor(model_name, use_http=True, api_key_getter=None):
     # Needs to happen as soon as possible so we put it here
     fix_certificate_authorities()
 

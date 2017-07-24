@@ -65,7 +65,8 @@ class HyperDash:
         self.use_http = use_http
         self.custom_api_key_getter = custom_api_key_getter
         self.programmatic_exit = False
-        self.shutdown_channel = Queue()
+        self.shutdown_network_channel = Queue()
+        self.shutdown_main_channel = Queue()
 
         # Used to keep track of the current position in the IO buffers
         self.out_buf_offset = 0
@@ -132,7 +133,7 @@ class HyperDash:
         self.server_manager_instance.put_buf(
             create_run_ended_message(self.current_sdk_run_uuid, exit_status),
         )
-        self.shutdown_channel.put(True)
+        self.shutdown_network_channel.put(True)
 
     def run(self):
         # Create a UUID to uniquely identify this run from the SDK's point of view
@@ -174,22 +175,24 @@ class HyperDash:
         it has, the event_loop will capture any remaining I/O and store that in
         the ServerManager's outgoing buf, as well as store a message indicating
         that the run is complete and its final exit status. Finally, the
-        event_loop thread will push a message into the shutdown_channel which
+        event_loop thread will push a message into the shutdown_network_channel which
         will indicate to the network_loop that it should finish sending any
-        pending messages and then exit. The event_loop thread will then exit.
-        At this point both the code_thread and event_loop thread have terminated
-        and all that remains is the network thread.
+        pending messages and then exit. The event_loop thread will then block
+        until it receives a message on the shutdown_main_channel.
 
-        At the next tick of the network_loop, the shutdown_channel will no longer
+        At the next tick of the network_loop, the shutdown_network_channel will no longer
         be empty, and the network loop will try and fire off any remaining messages
-        in the ServerManager's buffer to the server, and then exit.
+        in the ServerManager's buffer to the server, and then put a message in the
+        shutdown_main_channel.
 
-        With the final thread completed, the program will exit cleanly.
+        The main event_loop which has been blocked until now on the shutdown_main_channel
+        will now return, and the program will exit cleanly.
         """
         def network_loop():
             while True:
-                if self.shutdown_channel.qsize() != 0:
+                if self.shutdown_network_channel.qsize() != 0:
                     self.server_manager_instance.cleanup(self.current_sdk_run_uuid)
+                    self.shutdown_main_channel.put(True)
                     return
                 else:
                     self.server_manager_instance.tick(self.current_sdk_run_uuid)
@@ -217,6 +220,8 @@ class HyperDash:
                         self.cleanup_http("success")
                     else:
                         self.cleanup_http("failure")
+                    # Block until network loop says its done
+                    self.shutdown_main_channel.get(block=True, timeout=None)
                     return
                 time.sleep(1)
             # Handle Ctrl+C
