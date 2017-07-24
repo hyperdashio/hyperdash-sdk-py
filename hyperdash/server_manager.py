@@ -33,22 +33,6 @@ class Borg:
 
 
 class ServerManagerBase(Borg):
-    """
-    The ServerManager class inherits from Borg (to make it a singleton)
-    and from Session to use the WAMP protocol.
-
-    We want this class to behave like a Singleton because the interface
-    exposed by the Autobahn WAMP library accepts a class and instantiates
-    it, preventing us from doing any initialization. Making the class a
-    singleton allows us to instantiate it and configure it before the
-    library does.
-
-    We also define a custom_init() function instead of using __init__() to
-    setup the class's state. This is because the auto_reconnect feature of
-    the Autobahn library internally calls __init__. Thus, if we setup our
-    state in __init__ we would lose all pending incoming/outgoing messages
-    everytime we were disconnected.
-    """
     # TODO: Check type
     def put_buf(self, m):
         self.out_buf.append(m)
@@ -129,7 +113,8 @@ class ServerManagerBase(Borg):
     def cleanup(self, sdk_run_uuid):
         raise NotImplementedError()
 
-    def custom_init(self, custom_api_key_getter):
+    def __init__(self, custom_api_key_getter):
+        Borg.__init__(self)
         self.out_buf = deque()
         self.in_buf = deque()
         self.logger = logging.getLogger("hyperdash.{}".format(__name__))
@@ -139,9 +124,6 @@ class ServerManagerBase(Borg):
         self.api_key = None
         self.fetched_api_key_at = None
         self.last_message_sent_at = None
-
-    def __init__(self, *args, **kwargs):
-        Borg.__init__(self)
 
 
 class ServerManagerHTTP(ServerManagerBase):
@@ -213,8 +195,8 @@ class ServerManagerHTTP(ServerManagerBase):
         # Try and flush any remaining messages
         return self.tick(sdk_run_uuid)
 
-    def custom_init(self, custom_api_key_getter):
-        ServerManagerBase.custom_init(self, custom_api_key_getter)
+    def __init__(self, custom_api_key_getter):
+        ServerManagerBase.__init__(self, custom_api_key_getter)
         # TODO: Keep alive
         # TODO: Timeout
         self.s = HTTPSession()

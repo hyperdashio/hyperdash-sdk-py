@@ -52,11 +52,11 @@ class HyperDash:
         """
         self.job_name = job_name
         self.code_runner = code_runner
+        self.custom_api_key_getter = custom_api_key_getter        
         self.server_manager_class = server_manager_class
-        self.server_manager_instance = self.server_manager_class()
+        self.server_manager_instance = self.server_manager_class(self.custom_api_key_getter)
         self.out_buf, self.err_buf = io_bufs
         self.std_out, self.std_err = std_streams
-        self.custom_api_key_getter = custom_api_key_getter
         self.programmatic_exit = False
         self.shutdown_network_channel = Queue()
         self.shutdown_main_channel = Queue()
@@ -67,8 +67,6 @@ class HyperDash:
 
         # SDK-generated run UUID
         self.current_sdk_run_uuid = None
-
-        self.server_manager_instance.custom_init(self.custom_api_key_getter)
 
         def on_stdout_flush():
             self.capture_io()
