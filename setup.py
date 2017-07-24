@@ -1,19 +1,14 @@
 from setuptools import setup
 
 
-version = "0.4.8"
+version = "0.5.0"
 
 setup(
     name='hyperdash',
     packages=['hyperdash', 'hyperdash_cli'],
     install_requires=[
-        'autobahn',
-        'certifi',
-        'pyOpenSSL',
         'requests',
-        'service_identity',
         'six',
-        'Twisted',
     ],
     entry_points={
         'console_scripts': ['hyperdash = hyperdash_cli.cli:main']

@@ -10,24 +10,14 @@ import time
 from collections import deque
 from traceback import format_exc
 
-from autobahn.twisted.wamp import Session as WAMPSession
-from autobahn.twisted.wamp import ApplicationRunner
-from autobahn.wamp.exception import ApplicationError
-from autobahn.wamp.types import CallOptions
-
 from requests.exceptions import BaseHTTPError
 from requests import Request
 from requests import Session as HTTPSession
-
-from twisted.internet.defer import inlineCallbacks
-from twisted.internet.defer import returnValue
 
 from .constants import AUTH_KEY_NAME
 from .constants import CACHE_API_KEY_FOR_SECONDS
 from .constants import get_hyperdash_json_paths
 from .constants import get_http_url
-from .constants import get_wamp_url
-from .constants import WAMP_REALM
 from .sdk_message import create_heartbeat_message
 
 
@@ -228,150 +218,3 @@ class ServerManagerHTTP(ServerManagerBase):
         # TODO: Keep alive
         # TODO: Timeout
         self.s = HTTPSession()
-
-
-class ServerManagerWAMP(ServerManagerBase, WAMPSession):
-    def onJoin(self, *args, **kwargs):
-        self.logger.debug("Realm joined")
-        self.unauthorized = False
-
-    def onClose(self, wasClean, code=None, reason=None):
-        if reason and "401" in reason:
-            self.unauthorized = True
-            # Prevent auto-reconnect from trying forever
-            self.application_runner.stop()
-
-            api_key = self.get_api_key()
-            self.log_error_once("Invalid API key: {}".format(api_key))
-        elif not wasClean:
-            self.log_error_once(
-                "Connection to Hyperdash servers terminated: {}".format(reason),
-            )
-
-    def received_message(self, m):
-        self.in_buf.append(m)
-
-    @inlineCallbacks
-    def tick(self, sdk_run_uuid):
-        if self.unauthorized:
-            returnValue(False)
-
-        # If there are no messages to be sent, check if we
-        # need to send a heartbeat
-        if self.should_send_heartbeat():
-            try:
-                yield self.send_message(create_heartbeat_message(sdk_run_uuid))
-            except ApplicationError as e:
-                self.log_error_once(
-                    "Unable to send heartbeat: {}".format(e.error_message()),
-                )
-            except Exception as e:
-                self.log_error_once("Unable to send heartbeat message")
-
-        # TODO: Max messages per tick?
-        # TODO: Message batching
-        while True:
-            try:
-                message = self.out_buf.popleft()
-            # Empty
-            except IndexError:
-                # Clean exit
-                returnValue(True)
-
-            try:
-                yield self.send_message(message)
-            # Poison-pill, drop it
-            except ValueError:
-                self.logger.debug("Invalid websocket message")
-                continue
-            except ApplicationError as e:
-                if "api_key_required" in e.error_message():
-                    self.unauthorized = True
-                    # Prevent auto-reconnect from trying forever
-                    self.application_runner.stop()
-                    api_key = self.get_api_key()
-                    self.log_error_once("Invalid API key: {}".format(api_key))
-                else:
-                    self.log_error_once(
-                        "Error communicating with Hyperdash servers: {}".format(
-                            e.error_message(),
-                        ),
-                    )
-
-                # Re-enque so message is not lost
-                self.out_buf.appendleft(message)
-                returnValue(False)
-                return
-            except Exception:
-                # Re-enque so message is not lost
-                self.out_buf.appendleft(message)
-                self.log_error_once("Error communicating with Hyperdash servers...")
-                self.logger.debug("Error sending WAMP message")
-                # Exited with pending messages
-                returnValue(False)
-
-    @inlineCallbacks
-    def send_message(self, message, raise_exceptions=True, **kwargs):
-        kwargs = {
-            AUTH_KEY_NAME: self.get_api_key(),
-        }
-        try:
-            yield self.call(
-                u"sdk.sendMessage",
-                message,
-                # Timeout is not currently working in the latest version of Autobahn...
-                # options=CallOptions(timeout=1),
-                **kwargs
-            )
-        except Exception as e:
-            if raise_exceptions:
-                raise
-        finally:
-            self.last_message_sent_at = time.time()
-
-    def custom_init(self, custom_api_key_getter):
-        ServerManagerBase.custom_init(self, custom_api_key_getter)
-
-        self.application_runner = ApplicationRunner(
-            url=get_wamp_url(),
-            realm=WAMP_REALM,
-            headers={AUTH_KEY_NAME: self.get_api_key()},
-        )
-        self.application_runner_deferred = self.application_runner.run(
-            ServerManagerWAMP,
-            start_reactor=False,
-            auto_reconnect=True,
-        )
-        self.application_runner_deferred.addCallback(
-            self.create_disconnect_monkeypatch(),
-        )
-
-    @inlineCallbacks
-    def cleanup(self, sdk_run_uuid):
-        # Try and flush any remaining messages
-        clean = yield self.tick(sdk_run_uuid)
-        returnValue(clean)
-
-    def create_disconnect_monkeypatch(self):
-        """
-        Without this monkey patch, the onClose method would
-        not be called in the scenario where the SDK tries to
-        connect to the server, but is rejected due to an
-        invalid API key:
-        https://github.com/crossbario/autobahn-python/issues/559
-        """
-        def connect_success(proto):
-            orig_on_close = proto.onClose
-
-            def fake_on_close(*args, **kwargs):
-                if proto._session is None:
-                    self.onClose(*args, **kwargs)
-                else:
-                    orig_on_close(*args, **kwargs)
-
-            proto.onClose = fake_on_close
-        return connect_success
-
-    def __init__(self, *args, **kwargs):
-        ServerManagerBase.__init__(self, *args, **kwargs)
-        WAMPSession.__init__(self, *args, **kwargs)
