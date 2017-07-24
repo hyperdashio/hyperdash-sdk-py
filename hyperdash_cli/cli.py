@@ -93,7 +93,7 @@ def demo():
             print("Epoch 5, accuracy: 100%")
     """)
 
-    @monitor("dogs vs. cats")
+    @monitor("dogs vs. cats", use_http=True)
     def train_dogs_vs_cats():
         print("Begin training model to distinguish dogs from cats...")
         print("Epoch 1, accuracy: 50%")
@@ -128,7 +128,7 @@ def _login(email, password):
         return False, None
 
     response_body = response.json()
-    if response.status_code == 422 or response.status_code == 401:
+    if response.status_code != 200:
         message = response_body.get('message')
         if message:
             print(message)
@@ -156,7 +156,7 @@ def get_api_keys(access_token):
             'authorization': access_token,
         })
         res_json = res.json()
-        if res.status_code == 422 or res.status_code == 401:
+        if res.status_code != 200:
             message = res_json.get('message')
             if message:
                 print(message)
