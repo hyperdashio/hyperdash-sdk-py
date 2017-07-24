@@ -37,6 +37,7 @@ class TestSDK(object):
             "Still training...",
             "Done!",
         ]
+        expected_return = "final_result"
 
         with patch('sys.stdout', new=StringIO()) as fake_out:
             @monitor("test_job", use_http=True)
@@ -44,8 +45,11 @@ class TestSDK(object):
                 for log in logs:
                     print(log)
                     time.sleep(2)
+                return expected_return
 
-            test_job()
+            return_val = test_job()
+
+            assert return_val == expected_return
             captured_out = fake_out.getvalue()
             for log in logs:
                 assert log in captured_out

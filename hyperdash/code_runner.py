@@ -19,6 +19,7 @@ class CodeRunner:
         self.f = self.wrap(f, *args, **kwargs)
         self.done = False
         self.exited_cleanly = True
+        self.return_val = None
         self.lock = Lock()
         self.logger = logging.getLogger("hyperdash.{}".format(__name__))
 
@@ -32,7 +33,7 @@ class CodeRunner:
         def wrapped():
             # TODO: Error handling
             try:
-                f(*args, **kwargs)
+                return_val = f(*args, **kwargs)
             except Exception as e:
                 self.logger.error(format_exc())
                 with self.lock:
@@ -41,6 +42,7 @@ class CodeRunner:
             finally:
                 with self.lock:
                     self.done = True
+                    self.return_val = return_val if return_val else None
         return wrapped
 
     def run(self):
@@ -49,3 +51,7 @@ class CodeRunner:
     def is_done(self):
         with self.lock:
             return self.exited_cleanly, self.done
+    
+    def get_return_val(self):
+        with self.lock:
+            return self.return_val
