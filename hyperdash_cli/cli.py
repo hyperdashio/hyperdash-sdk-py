@@ -93,7 +93,7 @@ def demo():
             print("Epoch 5, accuracy: 100%")
     """)
 
-    @monitor("dogs vs. cats", use_http=True)
+    @monitor("dogs vs. cats")
     def train_dogs_vs_cats():
         print("Begin training model to distinguish dogs from cats...")
         print("Epoch 1, accuracy: 50%")
