@@ -6,8 +6,6 @@ import six
 
 AUTH_KEY_NAME = "x-hyperdash-auth"
 HTTP_ENDPOINT = "/api/v1/sdk/http"
-WAMP_ENDPOINT = "/api/v1/sdk/wamp"
-WAMP_REALM = u"hyperdash.v1.sdk"
 CACHE_API_KEY_FOR_SECONDS = 300
 
 
@@ -20,17 +18,6 @@ def get_base_http_url():
 
 def get_http_url():
     return get_base_http_url() + HTTP_ENDPOINT
-
-
-def get_base_wamp_url():
-    return six.text_type(os.environ.get(
-        "HYPERDASH_SERVER",
-        "wss://hyperdash.io",
-    ))
-
-
-def get_wamp_url():
-    return get_base_wamp_url() + WAMP_ENDPOINT
 
 
 def get_hyperdash_json_paths():
