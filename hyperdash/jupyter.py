@@ -18,8 +18,7 @@ try:
       
       @monitor(line)
       def wrapped():
-        ns = {}
-        exec(cell, self.shell.user_ns, ns)
+        exec(cell, self.shell.user_ns, None)
       wrapped()
 
 except ImportError:
