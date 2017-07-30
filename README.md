@@ -8,7 +8,7 @@ The Hyperdash Python SDK is the official SDK for [Hyperdash.io](https://hyperdas
 
 ## Usage
 
-The Hyperdash SDK requires a valid API key in order to function. Luckily, the `hyperdash login` (if you already have an account) and `hyperdash login` (if you do already have an account) will automatically install one for you.
+The Hyperdash SDK requires a valid API key in order to function. Luckily, the `hyperdash login` (if you already have an account) and `hyperdash signup` (if you don't) commands will automatically install one for you.
 
 If you'd rather manage your API key manually, then review the "API Key Storage" section below.
 
