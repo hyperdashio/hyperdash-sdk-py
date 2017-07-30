@@ -357,7 +357,7 @@ def main():
     demo_parser.set_defaults(func=keys)
 
     run_parser = subparsers.add_parser('run')
-    run_parser.add_argument('--name', required=True)
+    run_parser.add_argument('--name', '-name', '--n', '-n', required=True)
     run_parser.add_argument('args', nargs=argparse.REMAINDER)
     run_parser.set_defaults(func=run)
 
