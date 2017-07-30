@@ -17,7 +17,7 @@ class IOBuffer:
     # Wrap the write method so the buffer can handle inputs other than strings
     # Otherwise it would fail with calls like: print(1) or print(<SOME_OBJECT>)
     def write(self, input):
-        # Writes happen in other reads so we explicitly guard against them inside the class
+        # Writes happen in other threads so we explicitly guard against them inside the class
         with self.lock:
             uni = text_type(input)
             self.buf.write(uni)

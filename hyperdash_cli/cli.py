@@ -2,12 +2,16 @@ import argparse
 import errno
 from getpass import getpass
 import os
+import subprocess
 import time
+from threading import Thread
 import json
+import sys
 
 import requests
 
 from six.moves import input
+from six.moves.queue import Queue
 
 from hyperdash.constants import get_hyperdash_json_home_path
 from hyperdash.constants import get_hyperdash_json_paths
@@ -16,7 +20,7 @@ from hyperdash import monitor
 from .constants import get_base_url
 
 
-def signup():
+def signup(args=None):
     email = get_input("Email address: ")
     password = get_input("Password (8 characters or more): ", True)
 
@@ -56,7 +60,7 @@ def signup():
     _login(email, password)
 
 
-def demo():
+def demo(args=None):
     from_file = get_api_key_from_file()
     from_env = get_api_key_from_env()
     api_key = from_env or from_file
@@ -109,7 +113,7 @@ def demo():
     train_dogs_vs_cats()
 
 
-def login():
+def login(args=None):
     email = get_input("Email address: ")
     password = get_input("Password: ", True)
     success, default_api_key = _login(email, password)
@@ -167,7 +171,7 @@ def get_api_keys(access_token):
         return None
 
 
-def keys():
+def keys(args=None):
     from_file = get_access_token_from_file()
     from_env = get_access_token_from_env()
     access_token = from_file or from_env
@@ -188,6 +192,55 @@ def keys():
         print("    {}) {}".format(i+1, api_key))
 
     print("\n")
+
+
+def run(args):
+    @monitor(args.name)
+    def wrapped():
+        # Python detects when its connected to a pipe and buffers output.
+        # Spawn the users program with the PYTHONUNBUFFERED environment 
+        # variable set in case they are running a Python program.
+        subprocess_env = os.environ.copy()
+        subprocess_env["PYTHONUNBUFFERED"]="1"
+        # Spawn a subprocess with the user's command
+        p = subprocess.Popen(
+            ' '.join(args.args),
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            bufsize=0,
+            env=subprocess_env,
+        )
+
+        # The subprocess's output will be written to the associated
+        # pipes. In order for the @monitor decorator to have access
+        # to them, we need to read them out and write them to
+        # stdout/stderr respectively (which have been redirected by
+        # the monitor decorator)
+        def stdout_loop():
+            while True:
+                data = p.stdout.readline()
+                if not data:
+                    return
+                sys.stdout.write(data)
+        def stderr_loop():
+            while True:
+                data = p.stderr.readline()
+                if not data:
+                    return
+                sys.stderr.write(data)
+
+        stdout_thread = Thread(target=stdout_loop)
+        stderr_thread = Thread(target=stderr_loop)
+        stdout_thread.start()
+        stderr_thread.start()
+        # Wait for the subprocess to finish executing
+        p.wait()
+        # Threads will exit as soon as their associated pipes are closed by the operating system
+        stdout_thread.join()
+        stderr_thread.join()
+    wrapped()
+
 
 def get_input(prompt, sensitive=False):
     if sensitive:
@@ -303,5 +356,10 @@ def main():
     demo_parser = subparsers.add_parser('keys')
     demo_parser.set_defaults(func=keys)
 
+    run_parser = subparsers.add_parser('run')
+    run_parser.add_argument('--name', required=True)
+    run_parser.add_argument('args', nargs=argparse.REMAINDER)
+    run_parser.set_defaults(func=run)
+
     args = parser.parse_args()
-    args.func()
+    args.func(args)
