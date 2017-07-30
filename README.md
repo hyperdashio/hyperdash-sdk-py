@@ -8,7 +8,26 @@ The Hyperdash Python SDK is the official SDK for [Hyperdash.io](https://hyperdas
 
 ## Usage
 
-### Standalone script
+The Hyperdash SDK requires a valid API key in order to function. Luckily, the `hyperdash login` (if you already have an account) and `hyperdash signup` (if you don't) commands will automatically install one for you.
+
+If you'd rather manage your API key manually, then review the "API Key Storage" section below.
+
+### Standalone Script
+The easiest way to use the Hyperdash SDK is to simply prefix any terminal command with `hyperdash run`:
+
+```
+hyperdash run -n "My test python script" python my_test_script.py
+```
+
+or
+
+```
+hyperdash run -n "My test bash script" ./my_test_bash_script.sh
+```
+
+It doesn't matter what language your script is written in, if it can be executed from the command line then you can wrap it with the `run`  command
+
+### Decorating a Python function
 Import the monitor function, and apply it as a decorator to a function that runs your machine learning job. The only argument you need to pass to the monitor function is the name of the model that you're training.
 
 ```
@@ -25,13 +44,11 @@ def train_dogs_vs_cats():
   print("Epoch 3, accuracy: 100%")
 ```
 
-Once you've imported our library, make sure your API key is available in the HYPERDASH_API_KEY environment variable and run your program as you normally would:
+Once you've imported our library, run your program as you normally would:
 
-`HYPERDASH_API_KEY=ZHNmYWRzYXNkZmFzZGZhc2RmYXNmYXNmFmZHNhZhcw== python test_script.py`
+`python test_script.py`
 
 That's it! Open the Hyperdash mobile app and you should see your logs start to stream in!
-
-Don't have an API key? Run `hyperdash signup` to get one!
 
 ### IPython/Jupyter Notebook
 
