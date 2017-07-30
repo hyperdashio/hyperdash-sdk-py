@@ -16,13 +16,13 @@ If you'd rather manage your API key manually, then review the "API Key Storage" 
 The easiest way to use the Hyperdash SDK is to simply prefix any terminal command with `hyperdash run`:
 
 ```
-hyperdash run --name "My test python script" python my_test_script.py
+hyperdash run -n "My test python script" python my_test_script.py
 ```
 
 or
 
 ```
-hyperdash run --name "My test bash script" ./my_test_bash_script.sh
+hyperdash run -n "My test bash script" ./my_test_bash_script.sh
 ```
 
 It doesn't matter what language your script is written in, if it can be executed from the command line then you can wrap it with the `run`  command
