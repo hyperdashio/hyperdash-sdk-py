@@ -88,7 +88,18 @@ class TestCLI(object):
         request_handle_dict[("POST", "/api/v1/users")] = user_signup
         request_handle_dict[("POST", "/api/v1/sessions")] = user_login
         request_handle_dict[("GET", "/api/v1/users/api_keys")] = user_api_keys
-        request_handle_dict[("POST", "/api/v1/sdk/http")] = sdk_message        
+        request_handle_dict[("POST", "/api/v1/sdk/http")] = sdk_message
+
+    def test_version(self):
+        version_mock = Mock(return_value=[Mock(version="0.1-test")])
+        with patch('pkg_resources.require', version_mock), patch('sys.stdout', new=StringIO()) as fake_out:
+            hyperdash_cli.version()
+
+        expected_output = [
+            "hyperdash 0.1-test",
+        ]
+        for expected in expected_output:
+            assert_in(expected, fake_out.getvalue())
 
     def test_signup(self):
         vals = {
@@ -154,7 +165,7 @@ class TestCLI(object):
                     ]
                 )
             )
-        
+
         expected_output = [
             "hello world",
             "foo bar baz",
