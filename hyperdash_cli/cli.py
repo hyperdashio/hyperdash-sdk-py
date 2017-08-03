@@ -350,11 +350,11 @@ def main():
     demo_parser = subparsers.add_parser('demo')
     demo_parser.set_defaults(func=demo)
 
-    demo_parser = subparsers.add_parser('login')
-    demo_parser.set_defaults(func=login)
+    login_parser = subparsers.add_parser('login')
+    login_parser.set_defaults(func=login)
 
-    demo_parser = subparsers.add_parser('keys')
-    demo_parser.set_defaults(func=keys)
+    keys_parser = subparsers.add_parser('keys')
+    keys_parser.set_defaults(func=keys)
 
     run_parser = subparsers.add_parser('run')
     run_parser.add_argument('--name', '-name', '--n', '-n', required=True)

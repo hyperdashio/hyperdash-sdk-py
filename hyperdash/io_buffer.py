@@ -1,6 +1,7 @@
 from io import StringIO
 from threading import RLock
 
+from six import PY2
 
 def noop():
     pass
@@ -17,7 +18,9 @@ class IOBuffer:
     def write(self, input):
         # Writes happen in other threads so we explicitly guard against them inside the class
         with self.lock:
-            self.buf.write(input.decode("utf-8", "ignore"))
+            if PY2:
+                return self.buf.write(input.decode("utf-8", "ignore"))
+            self.buf.write(input)
 
     def getvalue(self):
         return self.buf.getvalue()
