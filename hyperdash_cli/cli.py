@@ -12,6 +12,7 @@ import requests
 
 from six.moves import input
 from six.moves.queue import Queue
+from six import PY2
 
 from hyperdash.constants import get_hyperdash_json_home_path
 from hyperdash.constants import get_hyperdash_json_paths
@@ -222,13 +223,19 @@ def run(args):
                 data = p.stdout.readline()
                 if not data:
                     return
-                sys.stdout.write(data)
+                # In PY2 data is str, in PY3 its bytes
+                if PY2:
+                    return sys.stdout.write(data)
+                return sys.stdout.write(data.decode("utf-8", "ignore"))
         def stderr_loop():
             while True:
                 data = p.stderr.readline()
                 if not data:
                     return
-                sys.stderr.write(data)
+                # In PY2 data is str, in PY3 its bytes
+                if PY2:
+                    return sys.stdout.write(data)
+                return sys.stdout.write(data.decode("utf-8", "ignore"))
 
         stdout_thread = Thread(target=stdout_loop)
         stderr_thread = Thread(target=stderr_loop)

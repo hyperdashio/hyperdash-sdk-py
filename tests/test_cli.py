@@ -6,6 +6,7 @@ import os
 import requests
 
 from six import StringIO
+fro six import PY2
 from mock import patch, Mock
 from nose.tools import assert_in
 
@@ -164,4 +165,7 @@ class TestCLI(object):
             "{'some_obj_key': 'some_value'}"
         ]
         for expected in expected_output:
-            assert_in(expected, fake_out.getvalue().encode("utf-8"))
+            if PY2:
+                assert_in(expected, fake_out.getvalue().encode("utf-8"))
+                continue
+            assert_in(expected, fake_out.getvalue())
