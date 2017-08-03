@@ -19,7 +19,8 @@ class IOBuffer:
         # Writes happen in other threads so we explicitly guard against them inside the class
         with self.lock:
             if PY2:
-                return self.buf.write(input.decode("utf-8", "ignore"))
+                self.buf.write(input.decode("utf-8", "ignore"))
+                return
             self.buf.write(input)
 
     def getvalue(self):
