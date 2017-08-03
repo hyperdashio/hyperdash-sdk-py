@@ -12,6 +12,7 @@ import requests
 
 from six.moves import input
 from six.moves.queue import Queue
+from six import PY2
 
 from hyperdash.constants import get_hyperdash_json_home_path
 from hyperdash.constants import get_hyperdash_json_paths
@@ -222,13 +223,21 @@ def run(args):
                 data = p.stdout.readline()
                 if not data:
                     return
-                sys.stdout.write(data)
+                # In PY2 data is str, in PY3 its bytes
+                if PY2:
+                    sys.stdout.write(data)
+                    continue
+                sys.stdout.write(data.decode("utf-8", "ignore"))
         def stderr_loop():
             while True:
                 data = p.stderr.readline()
                 if not data:
                     return
-                sys.stderr.write(data)
+                # In PY2 data is str, in PY3 its bytes
+                if PY2:
+                    sys.stdout.write(data)
+                    continue
+                sys.stdout.write(data.decode("utf-8", "ignore"))
 
         stdout_thread = Thread(target=stdout_loop)
         stderr_thread = Thread(target=stderr_loop)
@@ -350,11 +359,11 @@ def main():
     demo_parser = subparsers.add_parser('demo')
     demo_parser.set_defaults(func=demo)
 
-    demo_parser = subparsers.add_parser('login')
-    demo_parser.set_defaults(func=login)
+    login_parser = subparsers.add_parser('login')
+    login_parser.set_defaults(func=login)
 
-    demo_parser = subparsers.add_parser('keys')
-    demo_parser.set_defaults(func=keys)
+    keys_parser = subparsers.add_parser('keys')
+    keys_parser.set_defaults(func=keys)
 
     run_parser = subparsers.add_parser('run')
     run_parser.add_argument('--name', '-name', '--n', '-n', required=True)

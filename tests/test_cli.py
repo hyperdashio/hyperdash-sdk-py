@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import argparse
 import json
 import os
@@ -5,6 +6,7 @@ import os
 import requests
 
 from six import StringIO
+from six import PY2
 from mock import patch, Mock
 from nose.tools import assert_in
 
@@ -150,7 +152,7 @@ class TestCLI(object):
                     args=[
                         "echo", "hello world", "&&",
                         "echo", "foo bar baz", "&&",
-                        "python", "tests/test_script_for_run_test.py"
+                        "python", "tests/test_script_for_run_test.py",
                     ]
                 )
             )
@@ -158,7 +160,12 @@ class TestCLI(object):
         expected_output = [
             "hello world",
             "foo bar baz",
-            "this is the test script"
+            "this is the test script",
+            "字",
+            "{'some_obj_key': 'some_value'}",
         ]
         for expected in expected_output:
+            if PY2:
+                assert_in(expected, fake_out.getvalue().encode("utf-8"))
+                continue
             assert_in(expected, fake_out.getvalue())

@@ -1,7 +1,9 @@
+# -*- coding: utf-8 -*-
 import json
 import time
 
 from six import StringIO
+from six import PY2
 from mock import patch
 import requests
 
@@ -36,7 +38,10 @@ class TestSDK(object):
             "Beginning machine learning...",
             "Still training...",
             "Done!",
+            # Handle unicode
+            "字",
         ]
+        test_obj = {'some_obj_key': 'some_value'}
         expected_return = "final_result"
 
         with patch('sys.stdout', new=StringIO()) as fake_out:
@@ -45,6 +50,8 @@ class TestSDK(object):
                 for log in logs:
                     print(log)
                     time.sleep(2)
+                print(test_obj)
+                time.sleep(2)
                 return expected_return
 
             return_val = test_job()
@@ -52,7 +59,12 @@ class TestSDK(object):
             assert return_val == expected_return
             captured_out = fake_out.getvalue()
             for log in logs:
+                if PY2:
+                    assert log in captured_out.encode("utf-8")
+                    continue
                 assert log in captured_out
+            assert str(test_obj) in captured_out            
+
             assert "error" not in captured_out
 
     def test_monitor_raises_exceptions(self):
