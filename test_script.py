@@ -4,7 +4,6 @@ from hyperdash.sdk import monitor
 
 
 def main():
-    # while True:
     print("Doing the machine learning...")
     time.sleep(2)
     print("accuracy: 0%")

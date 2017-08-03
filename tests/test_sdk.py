@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import json
 import time
 
@@ -36,6 +37,9 @@ class TestSDK(object):
             "Beginning machine learning...",
             "Still training...",
             "Done!",
+            # Handle unicode
+            "字",
+            {'some_obj_key': 'some_value'}
         ]
         expected_return = "final_result"
 
@@ -52,7 +56,7 @@ class TestSDK(object):
             assert return_val == expected_return
             captured_out = fake_out.getvalue()
             for log in logs:
-                assert log in captured_out
+                assert str(log) in captured_out.encode("utf-8")
             assert "error" not in captured_out
 
     def test_monitor_raises_exceptions(self):

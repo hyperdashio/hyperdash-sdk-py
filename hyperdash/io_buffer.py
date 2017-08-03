@@ -1,8 +1,6 @@
 from io import StringIO
 from threading import RLock
 
-from six import text_type
-
 
 def noop():
     pass
@@ -19,8 +17,7 @@ class IOBuffer:
     def write(self, input):
         # Writes happen in other threads so we explicitly guard against them inside the class
         with self.lock:
-            uni = text_type(input)
-            self.buf.write(uni)
+            self.buf.write(input.decode("utf-8", "ignore"))
 
     def getvalue(self):
         return self.buf.getvalue()

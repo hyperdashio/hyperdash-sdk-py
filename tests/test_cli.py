@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import argparse
 import json
 import os
@@ -158,7 +159,9 @@ class TestCLI(object):
         expected_output = [
             "hello world",
             "foo bar baz",
-            "this is the test script"
+            "this is the test script",
+            "字",
+            "{'some_obj_key': 'some_value'}"
         ]
         for expected in expected_output:
-            assert_in(expected, fake_out.getvalue())
+            assert_in(expected, fake_out.getvalue().encode("utf-8"))
