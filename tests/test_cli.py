@@ -6,7 +6,7 @@ import os
 import requests
 
 from six import StringIO
-fro six import PY2
+from six import PY2
 from mock import patch, Mock
 from nose.tools import assert_in
 
