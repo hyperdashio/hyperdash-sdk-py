@@ -152,7 +152,7 @@ class TestCLI(object):
                     args=[
                         "echo", "hello world", "&&",
                         "echo", "foo bar baz", "&&",
-                        "python", "tests/test_script_for_run_test.py"
+                        "python", "tests/test_script_for_run_test.py",
                     ]
                 )
             )
@@ -162,7 +162,7 @@ class TestCLI(object):
             "foo bar baz",
             "this is the test script",
             "字",
-            "{'some_obj_key': 'some_value'}"
+            "{'some_obj_key': 'some_value'}",
         ]
         for expected in expected_output:
             if PY2:
