@@ -39,7 +39,7 @@ class TestSDK(object):
             "Still training...",
             "Done!",
             # Handle unicode
-            "字"
+            "字",
         ]
         test_obj = {'some_obj_key': 'some_value'}
         expected_return = "final_result"
