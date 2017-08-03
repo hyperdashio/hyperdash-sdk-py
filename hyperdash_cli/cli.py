@@ -225,8 +225,9 @@ def run(args):
                     return
                 # In PY2 data is str, in PY3 its bytes
                 if PY2:
-                    return sys.stdout.write(data)
-                return sys.stdout.write(data.decode("utf-8", "ignore"))
+                    sys.stdout.write(data)
+                    continue
+                sys.stdout.write(data.decode("utf-8", "ignore"))
         def stderr_loop():
             while True:
                 data = p.stderr.readline()
@@ -234,8 +235,9 @@ def run(args):
                     return
                 # In PY2 data is str, in PY3 its bytes
                 if PY2:
-                    return sys.stdout.write(data)
-                return sys.stdout.write(data.decode("utf-8", "ignore"))
+                    sys.stdout.write(data)
+                    continue
+                sys.stdout.write(data.decode("utf-8", "ignore"))
 
         stdout_thread = Thread(target=stdout_loop)
         stderr_thread = Thread(target=stderr_loop)
