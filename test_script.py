@@ -1,7 +1,5 @@
 import time
 import sys
-from hyperdash.sdk import monitor
-
 
 def main():
     print("Doing the machine learning...")
