@@ -1,15 +1,17 @@
 # -*- coding: utf-8 -*-
 import json
+import os
 import time
 
 from six import StringIO
 from six import PY2
 from mock import patch
+from nose.tools import assert_in
 import requests
 
 from hyperdash import monitor
 from mocks import init_mock_server
-
+from hyperdash.constants import get_hyperdash_logs_home_path_for_job
 
 class TestSDK(object):
     @classmethod
@@ -34,6 +36,7 @@ class TestSDK(object):
         request_handle_dict[("POST", "/api/v1/sdk/http")] = sdk_message
 
     def test_monitor(self):
+        job_name = "some_test_job"
         logs = [
             "Beginning machine learning...",
             "Still training...",
@@ -45,7 +48,7 @@ class TestSDK(object):
         expected_return = "final_result"
 
         with patch('sys.stdout', new=StringIO()) as fake_out:
-            @monitor("test_job")
+            @monitor(job_name)
             def test_job():
                 for log in logs:
                     print(log)
@@ -66,6 +69,19 @@ class TestSDK(object):
             assert str(test_obj) in captured_out            
 
             assert "error" not in captured_out
+        
+        # Make sure logs were persisted
+        log_dir = get_hyperdash_logs_home_path_for_job(job_name)
+        latest_log_file = max([
+            os.path.join(log_dir, filename) for
+            filename in
+            os.listdir(log_dir)
+        ], key=os.path.getmtime)
+        with open(latest_log_file, 'r') as log_file:
+            data = log_file.read()
+            for log in logs:
+                assert_in(log, data)
+        os.remove(latest_log_file)
 
     def test_monitor_raises_exceptions(self):
         exception_raised = True

@@ -13,6 +13,7 @@ from nose.tools import assert_in
 import hyperdash_cli
 from mocks import init_mock_server
 from hyperdash.constants import get_hyperdash_json_home_path
+from hyperdash.constants import get_hyperdash_logs_home_path_for_job
 
 DEFAULT_API_KEY = "y9bhlYMBivCu8cBj6SQPAbwjxSqnbR1w23TtR9n9yOM="
 DEFAULT_ACCESS_TOKEN = "72a84fc0-b272-480a-807d-fd4a40ee2a66"
@@ -145,10 +146,11 @@ class TestCLI(object):
             assert_in(expected, fake_out.getvalue())
 
     def test_run(self):
+        job_name = "some_job_name"
         with patch('hyperdash_cli.cli.get_access_token_from_file', Mock(return_value=DEFAULT_ACCESS_TOKEN)), patch('sys.stdout', new=StringIO()) as fake_out:
             hyperdash_cli.run(
                 argparse.Namespace(
-                    name="yolo",
+                    name=job_name,
                     args=[
                         "echo", "hello world", "&&",
                         "echo", "foo bar baz", "&&",
@@ -169,3 +171,16 @@ class TestCLI(object):
                 assert_in(expected, fake_out.getvalue().encode("utf-8"))
                 continue
             assert_in(expected, fake_out.getvalue())
+
+        # Make sure logs were persisted
+        log_dir = get_hyperdash_logs_home_path_for_job(job_name)
+        latest_log_file = max([
+            os.path.join(log_dir, filename) for
+            filename in
+            os.listdir(log_dir)
+        ], key=os.path.getmtime)
+        with open(latest_log_file, 'r') as log_file:
+            data = log_file.read()
+            for expected in expected_output:
+                assert_in(expected, data)
+        os.remove(latest_log_file)
