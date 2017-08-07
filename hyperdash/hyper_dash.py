@@ -83,7 +83,7 @@ class HyperDash:
         self.err_buf.set_on_flush(on_stderr_flush)
 
         self.logger = logging.getLogger("hyperdash.{}".format(__name__))
-        self.log_file = self.open_log_file()
+        self.log_file, self.log_file_path = self.open_log_file()
         if not self.log_file:
             self.logger.error("Could not create logs file. Logs will not be stored locally.")
 
@@ -97,7 +97,7 @@ class HyperDash:
             except OSError as exc:
                 if exc.errno != errno.EEXIST:
                     pass
-                return None
+                return None, None
 
         job_log_folder = get_hyperdash_logs_home_path_for_job(self.job_name)
         # Make sure directory for job exists in log directory (/logs/<JOB_NAME>)
@@ -107,16 +107,17 @@ class HyperDash:
             except OSError as exc:
                 if exc.errno != errno.EEXIST:
                     pass
-                return None
+                return None, None
 
         # Create new log file for run
         try:
             # ISO 8601 with second precision
             iso = datetime.datetime.now().isoformat()
             logfile_name = "{}_{}.log".format(self.job_name, iso)
-            return open(os.path.join(job_log_folder, logfile_name), "a")
+            logfile_path = os.path.join(job_log_folder, logfile_name)
+            return open(logfile_path, "a"), logfile_path
         except IOError:
-            return None
+            return None, None
 
     def capture_io(self):
         self.out_buf.acquire()
@@ -153,12 +154,35 @@ class HyperDash:
                 self.log_file.write(s)
 
     def cleanup(self, exit_status):
+        self.print_log_file_location()
         self.capture_io()
         self.server_manager.put_buf(
             create_run_ended_message(self.current_sdk_run_uuid, exit_status),
         )
         self.log_file.flush()
         self.shutdown_network_channel.put(True)
+
+    def sudden_cleanup(self):
+        self.print_log_file_location()
+        # Send what we can to local log
+        self.capture_io()
+        self.log_file.flush()
+
+        # Make a best-effort attempt to notify server that the run was
+        # canceled by the user, but don't wait for all messages to
+        # be flushed to server so we don't hang the user's terminal.
+        self.server_manager.send_message(
+            create_run_ended_message(self.current_sdk_run_uuid, "user_canceled"),
+            raise_exceptions=False,
+            timeout_seconds=1
+        )
+
+    def print_log_file_location(self):
+        if self.log_file_path:
+            self.logger.info("Logs for this run of {} are available locally at: {}".format(
+                self.job_name,
+                self.log_file_path,
+            ))
 
     def run(self):
         """
@@ -246,17 +270,6 @@ class HyperDash:
                 time.sleep(1)
             # Handle Ctrl+C
             except (KeyboardInterrupt, SystemExit):
-                # Send what we can to local log
-                self.capture_io()
-                self.log_file.flush()
-
-                # Make a best-effort attempt to notify server that the run was
-                # canceled by the user, but don't wait for all messages to
-                # be flushed to server so we don't hang the user's terminal.
-                self.server_manager.send_message(
-                    create_run_ended_message(self.current_sdk_run_uuid, "user_canceled"),
-                    raise_exceptions=False,
-                    timeout_seconds=1
-                )
+                self.sudden_cleanup()
                 # code_thread and network_thread are daemons so they won't impede this
                 sys.exit(130)
