@@ -11,6 +11,7 @@ import time
 import uuid
 
 from six.moves.queue import Queue
+from six import PY2
 
 from .constants import get_hyperdash_logs_home_path
 from .constants import get_hyperdash_logs_home_path_for_job
@@ -136,15 +137,20 @@ class HyperDash:
         message = create_log_message(self.current_sdk_run_uuid, INFO_LEVEL, s)
         self.server_manager.put_buf(message)
         self.std_out.write(s)
-        if self.log_file:
-            self.log_file.write(s.encode("utf-8"))
+        self.write_to_log_file(s)
 
     def print_err(self, s):
         message = create_log_message(self.current_sdk_run_uuid, ERROR_LEVEL, s)
         self.server_manager.put_buf(message)
         self.std_err.write(s)
+        self.write_to_log_file(s)
+
+    def write_to_log_file(self, s):
         if self.log_file:
-            self.log_file.write(s.encode("utf-8"))
+            if six.PY2:
+                self.log_file.write(s.encode("utf-8"))
+            else:
+                self.log_file.write(s)
 
     def cleanup(self, exit_status):
         self.capture_io()
