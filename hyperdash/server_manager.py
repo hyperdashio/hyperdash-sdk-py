@@ -179,7 +179,7 @@ class ServerManagerHTTP(ServerManagerBase):
                 get_http_url(),
                 json=json.loads(message),
                 headers={AUTH_KEY_NAME: self.get_api_key()},
-                timeout=timeout_seconds
+                timeout=timeout_seconds,
             )
         except Exception:
             if raise_exceptions:

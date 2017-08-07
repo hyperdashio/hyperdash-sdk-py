@@ -174,7 +174,7 @@ class HyperDash:
         self.server_manager.send_message(
             create_run_ended_message(self.current_sdk_run_uuid, "user_canceled"),
             raise_exceptions=False,
-            timeout_seconds=1
+            timeout_seconds=1,
         )
 
     def print_log_file_location(self):
