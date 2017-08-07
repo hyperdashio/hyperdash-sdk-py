@@ -29,15 +29,33 @@ def get_hyperdash_json_paths():
     ]
 
 
+def get_hyperdash_home_path():
+    return os.path.expanduser("~/.hyperdash")
+
+
 def get_hyperdash_json_home_path():
-    return os.path.join(os.path.expanduser("~/.hyperdash"), "hyperdash.json")
+    return os.path.join(get_hyperdash_home_path(), "hyperdash.json")
 
 
-def get_hyperdash_json_local_path():
+def get_hyperdash_logs_home_path():
+    return os.path.join(get_hyperdash_home_path(), "logs")
+
+
+def get_hyperdash_logs_home_path_for_job(job):
+    return os.path.join(get_hyperdash_logs_home_path(), job)
+
+
+def get_hyperdash_local_path():
     main = sys.modules["__main__"]
     if not hasattr(main, "__file__"):
         return None
 
     main_file_path = os.path.abspath(main.__file__)
-    root_folder = os.path.dirname(main_file_path)
-    return os.path.join(root_folder, "hyperdash.json")
+    return os.path.dirname(main_file_path)
+
+
+def get_hyperdash_json_local_path():
+    local_path = get_hyperdash_local_path()
+    if not local_path:
+        return None
+    return os.path.join(local_path, "hyperdash.json")

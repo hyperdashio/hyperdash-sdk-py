@@ -173,13 +173,17 @@ class ServerManagerHTTP(ServerManagerBase):
                 self.out_buf.appendleft(message)
                 return False
 
-    def send_message(self, message, raise_exceptions=True):
+    def send_message(self, message, raise_exceptions=True, timeout_seconds=5):
         try:
             return self.s.post(
                 get_http_url(),
                 json=json.loads(message),
                 headers={AUTH_KEY_NAME: self.get_api_key()},
+                timeout=timeout_seconds,
             )
+        except Exception:
+            if raise_exceptions:
+                raise
         finally:
             self.last_message_sent_at = time.time()
 
