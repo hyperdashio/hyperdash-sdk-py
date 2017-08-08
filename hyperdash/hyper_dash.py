@@ -78,14 +78,12 @@ class HyperDash:
         def on_stdout_flush():
             self.capture_io()
             self.std_out.flush()
-            if self.log_file:
-                self.log_file.flush()
+            self.flush_log_file()
 
         def on_stderr_flush():
             self.capture_io()
             self.std_err.flush()
-            if self.log_file:
-                self.log_file.flush()
+            self.flush_log_file()
 
         self.out_buf.set_on_flush(on_stdout_flush)
         self.err_buf.set_on_flush(on_stderr_flush)
@@ -161,22 +159,24 @@ class HyperDash:
             else:
                 self.log_file.write(s)
 
+    def flush_log_file(self):
+        if self.log_file:
+            self.log_file.flush()
+
     def cleanup(self, exit_status):
         self.print_log_file_location()
         self.capture_io()
         self.server_manager.put_buf(
             create_run_ended_message(self.current_sdk_run_uuid, exit_status),
         )
-        if self.log_file:
-            self.log_file.flush()
+        self.flush_log_file()
         self.shutdown_network_channel.put(True)
 
     def sudden_cleanup(self):
         self.print_log_file_location()
         # Send what we can to local log
         self.capture_io()
-        if self.log_file:
-            self.log_file.flush()
+        self.flush_log_file()
 
         # Make a best-effort attempt to notify server that the run was
         # canceled by the user, but don't wait for all messages to
