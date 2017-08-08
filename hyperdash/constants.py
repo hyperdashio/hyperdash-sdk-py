@@ -3,6 +3,7 @@ import sys
 
 import six
 
+from slugify import slugify
 
 AUTH_KEY_NAME = "x-hyperdash-auth"
 HTTP_ENDPOINT = "/api/v1/sdk/http"
@@ -30,7 +31,7 @@ def get_hyperdash_json_paths():
 
 
 def get_hyperdash_home_path():
-    return os.path.expanduser("~/.hyperdash")
+    return os.path.join(os.path.expanduser("~"), ".hyperdash")
 
 
 def get_hyperdash_json_home_path():
@@ -42,7 +43,7 @@ def get_hyperdash_logs_home_path():
 
 
 def get_hyperdash_logs_home_path_for_job(job):
-    return os.path.join(get_hyperdash_logs_home_path(), job)
+    return os.path.join(get_hyperdash_logs_home_path(), slugify(job))
 
 
 def get_hyperdash_local_path():

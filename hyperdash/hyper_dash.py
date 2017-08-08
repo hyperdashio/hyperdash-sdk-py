@@ -12,6 +12,7 @@ import uuid
 
 from six.moves.queue import Queue
 from six import PY2
+from slugify import slugify
 
 from .constants import get_hyperdash_logs_home_path
 from .constants import get_hyperdash_logs_home_path_for_job
@@ -117,9 +118,8 @@ class HyperDash:
 
         # Create new log file for run
         try:
-            # ISO 8601 with second precision
-            iso = datetime.datetime.now().isoformat()
-            logfile_name = "{}_{}.log".format(self.job_name, iso)
+            iso = slugify(datetime.datetime.now().isoformat())
+            logfile_name = "{}_{}.log".format(slugify(self.job_name), iso)
             logfile_path = os.path.join(job_log_folder, logfile_name)
             return open(logfile_path, "a"), logfile_path
         except IOError:
