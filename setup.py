@@ -9,7 +9,7 @@ setup(
     install_requires=[
         'requests',
         'six',
-        'slugify'
+        'slugify',
     ],
     entry_points={
         'console_scripts': ['hyperdash = hyperdash_cli.cli:main']
