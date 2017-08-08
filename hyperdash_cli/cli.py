@@ -21,6 +21,12 @@ from hyperdash import monitor
 from .constants import get_base_url
 
 
+def version(args=None):
+    import pkg_resources  # part of setuptools
+    version = pkg_resources.require("hyperdash")[0].version
+    print("hyperdash {}".format(version))
+
+
 def signup(args=None):
     email = get_input("Email address: ")
     password = get_input("Password (8 characters or more): ", True)
@@ -145,7 +151,7 @@ def _login(email, password):
     # Add API key if available
     api_keys = get_api_keys(access_token)
     if api_keys and len(api_keys) > 0:
-        default_api_key = api_keys[0]    
+        default_api_key = api_keys[0]
         config['api_key'] = default_api_key
     else:
         print("Login failure: We were unable to retrieve your default API key.")
@@ -199,7 +205,7 @@ def run(args):
     @monitor(args.name)
     def wrapped():
         # Python detects when its connected to a pipe and buffers output.
-        # Spawn the users program with the PYTHONUNBUFFERED environment 
+        # Spawn the users program with the PYTHONUNBUFFERED environment
         # variable set in case they are running a Python program.
         subprocess_env = os.environ.copy()
         subprocess_env["PYTHONUNBUFFERED"]="1"
@@ -346,12 +352,15 @@ def get_api_key_from_env():
 
 
 def main():
-    parser = argparse.ArgumentParser(description='The HyperDash SDK')
+    parser = argparse.ArgumentParser(description='The Hyperdash SDK')
     subparsers = parser.add_subparsers(
         title='subcommands',
         description='valid subcommands',
         help='additional help',
     )
+
+    version_parser = subparsers.add_parser('version')
+    version_parser.set_defaults(func=version)
 
     signup_parser = subparsers.add_parser('signup')
     signup_parser.set_defaults(func=signup)
