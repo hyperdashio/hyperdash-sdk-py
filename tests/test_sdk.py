@@ -36,7 +36,7 @@ class TestSDK(object):
         request_handle_dict[("POST", "/api/v1/sdk/http")] = sdk_message
 
     def test_monitor(self):
-        job_name = "some_test_job"
+        job_name = "some:job(name)with unsafe for files ystem chars"
         logs = [
             "Beginning machine learning...",
             "Still training...",
