@@ -79,10 +79,9 @@ jobs:
             ./run test
 
 workflows:
-  version: 3
+  version: 2
   build:
     jobs:
       - "Python 3.6.1"
       - "Python 2.7.13"
       - "Python 3.5.3"
-      - "Python 2.7.6"
