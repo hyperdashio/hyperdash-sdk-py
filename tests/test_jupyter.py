@@ -1,20 +1,17 @@
 # -*- coding: utf-8 -*-
 import json
 import os
-import time
 
-from six import StringIO
 from six import PY2
-from mock import patch
 from nose.tools import assert_in
 import requests
-
-from hyperdash import monitor
-from mocks import init_mock_server
-from hyperdash.constants import get_hyperdash_logs_home_path_for_job
-
 import nbformat
 from nbconvert.preprocessors import ExecutePreprocessor
+
+from hyperdash import monitor
+from hyperdash.constants import get_hyperdash_logs_home_path_for_job
+from mocks import init_mock_server
+
 
 class TestJupyter(object):
     @classmethod
@@ -57,15 +54,15 @@ class TestJupyter(object):
         all_stdout = ""
         second_cell_output = result[0]["cells"][1]["outputs"]
         for output in second_cell_output:
-          if output.name == "stdout":
-            all_stdout = all_stdout + output.text
+            if output.name == "stdout":
+                all_stdout = all_stdout + output.text
 
         # Assert on all output from cell2
         for log in expected_logs:
-          if PY2:
-            assert_in(log, all_stdout.encode("utf-8"))
-            continue
-          assert_in(log, all_stdout)
+            if PY2:
+                assert_in(log, all_stdout.encode("utf-8"))
+                continue
+            assert_in(log, all_stdout)
 
         # Verify that variables declared in previous cells can be affected
         third_cell_output = result[0]["cells"][2]["outputs"]
