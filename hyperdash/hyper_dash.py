@@ -69,17 +69,21 @@ class HyperDash:
         # Create a UUID to uniquely identify this run from the SDK's point of view
         self.current_sdk_run_uuid = str(uuid.uuid4())
 
+        # Create run_start message before doing any other setup work to make sure that the
+        # run_started message always precedes any other messages
+        self.server_manager.put_buf(
+            create_run_started_message(self.current_sdk_run_uuid, self.job_name),
+        )
+
         def on_stdout_flush():
             self.capture_io()
             self.std_out.flush()
-            if self.log_file:
-                self.log_file.flush()
+            self.flush_log_file()
 
         def on_stderr_flush():
             self.capture_io()
             self.std_err.flush()
-            if self.log_file:
-                self.log_file.flush()
+            self.flush_log_file()
 
         self.out_buf.set_on_flush(on_stdout_flush)
         self.err_buf.set_on_flush(on_stderr_flush)
@@ -155,20 +159,24 @@ class HyperDash:
             else:
                 self.log_file.write(s)
 
+    def flush_log_file(self):
+        if self.log_file:
+            self.log_file.flush()
+
     def cleanup(self, exit_status):
         self.print_log_file_location()
         self.capture_io()
         self.server_manager.put_buf(
             create_run_ended_message(self.current_sdk_run_uuid, exit_status),
         )
-        self.log_file.flush()
+        self.flush_log_file()
         self.shutdown_network_channel.put(True)
 
     def sudden_cleanup(self):
         self.print_log_file_location()
         # Send what we can to local log
         self.capture_io()
-        self.log_file.flush()
+        self.flush_log_file()
 
         # Make a best-effort attempt to notify server that the run was
         # canceled by the user, but don't wait for all messages to
@@ -224,12 +232,6 @@ class HyperDash:
         The main event_loop which has been blocked until now on the shutdown_main_channel
         will now return, and the program will exit cleanly.
         """
-        # Create run_start message before doing any other setup work to make sure that the
-        # run_started message always precedes any other messages
-        self.server_manager.put_buf(
-            create_run_started_message(self.current_sdk_run_uuid, self.job_name),
-        )
-
         def network_loop():
             while True:
                 if self.shutdown_network_channel.qsize() != 0:
