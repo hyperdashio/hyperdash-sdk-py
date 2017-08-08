@@ -98,7 +98,7 @@ jobs:
             ./run test
 
 workflows:
-  version: 2
+  version: 3
   build:
     jobs:
       - "Python 3.6.1"
