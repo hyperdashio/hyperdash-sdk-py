@@ -47,7 +47,7 @@ class TestJupyter(object):
         with open("./tests/jupyter_test_file.py.ipynb") as f:
             nb = nbformat.read(f, as_version=4.0)
 
-        ep = ExecutePreprocessor(timeout=5000)
+        ep = ExecutePreprocessor(timeout=5000, kernel_name="python")
         result = ep.preprocess(nb, {})
 
         # Accumulate all output from cell 2
