@@ -72,12 +72,14 @@ class HyperDash:
         def on_stdout_flush():
             self.capture_io()
             self.std_out.flush()
-            self.log_file.flush()
+            if self.log_file:
+                self.log_file.flush()
 
         def on_stderr_flush():
             self.capture_io()
             self.std_err.flush()
-            self.log_file.flush()
+            if self.log_file:
+                self.log_file.flush()
 
         self.out_buf.set_on_flush(on_stdout_flush)
         self.err_buf.set_on_flush(on_stderr_flush)
