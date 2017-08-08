@@ -1,5 +1,6 @@
-from .sdk import monitor
+from six import PY2
 
+from .sdk import monitor
 
 # Handle situation where IPython is not in the local environment OR
 # it is available, but we're not running in the context of an IPython
@@ -20,7 +21,10 @@ try:
       
       @monitor(line)
       def wrapped():
-        exec cell in self.shell.user_ns, local_ns
+        if PY2:
+          exec cell in self.shell.user_ns, local_ns
+        else:
+          exec(cell, self.shell.user_ns, local_ns)
       wrapped()
 
 except ImportError:
