@@ -59,6 +59,25 @@ jobs:
             . venv/bin/activate
             ./run test
 
+  "Python 2.7.6":
+    docker:
+      - image: hyperdashapp/circleci-python:2.7.6
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - run:
+          name: Install Dependencies
+          command: |
+            python -m virtualenv venv
+            . venv/bin/activate
+            pip install -r requirements_dev.txt
+
+      - run:
+          name: Run Tests
+          command: |
+            . venv/bin/activate
+            ./run test
+
 workflows:
   version: 2
   build:
@@ -66,3 +85,4 @@ workflows:
       - "Python 3.6.1"
       - "Python 2.7.13"
       - "Python 3.5.3"
+      - "Python 2.7.6"
