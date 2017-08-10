@@ -73,6 +73,8 @@ Cell 2
 |__________________________________________________________ |
 ```
 
+Note that importing the cell magic and invoking it must occur in two different cells.
+
 ### API key storage
 
 If you signed up through the CLI, then your API key is already installed in hyperdash.json file in the home directory of your user.
