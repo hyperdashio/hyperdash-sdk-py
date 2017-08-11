@@ -186,7 +186,8 @@ class HyperDash:
             raise_exceptions=False,
             timeout_seconds=1,
         )
-        # Prevent the network thread from continuiing to run in the background 
+        # Prevent the network thread from continuing to run in the background
+        # even if SystemExit is caught        
         self.shutdown_network_channel.put(True)
 
     def print_log_file_location(self):
