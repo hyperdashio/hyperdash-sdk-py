@@ -55,7 +55,7 @@ class HyperDash:
             5) std_streams: Tuple in the form of (StdOut, StdErr)
         """
         self.job_name = job_name
-        self.code_runner = code_runner    
+        self.code_runner = code_runner
         self.server_manager = server_manager
         self.out_buf, self.err_buf = io_bufs
         self.std_out, self.std_err = std_streams
@@ -67,13 +67,17 @@ class HyperDash:
         self.out_buf_offset = 0
         self.err_buf_offset = 0
 
+        self.server_out_buf_offset = 0
+        self.server_err_buf_offset = 0
+
         # Create a UUID to uniquely identify this run from the SDK's point of view
         self.current_sdk_run_uuid = str(uuid.uuid4())
 
         # Create run_start message before doing any other setup work to make sure that the
         # run_started message always precedes any other messages
         self.server_manager.put_buf(
-            create_run_started_message(self.current_sdk_run_uuid, self.job_name),
+            create_run_started_message(
+                self.current_sdk_run_uuid, self.job_name),
         )
 
         def on_stdout_flush():
@@ -92,11 +96,12 @@ class HyperDash:
         self.logger = logging.getLogger("hyperdash.{}".format(__name__))
         self.log_file, self.log_file_path = self.open_log_file()
         if not self.log_file:
-            self.logger.error("Could not create logs file. Logs will not be stored locally.")
+            self.logger.error(
+                "Could not create logs file. Logs will not be stored locally.")
 
     def open_log_file(self):
         log_folder = get_hyperdash_logs_home_path()
-        
+
         # Make sure logs directory exists (/logs)
         if not os.path.exists(log_folder):
             try:
@@ -129,28 +134,53 @@ class HyperDash:
         self.out_buf.acquire()
         out = self.out_buf.getvalue()
         len_out = len(out) - self.out_buf_offset
-        self.print_out(out[self.out_buf_offset:]) if len_out != 0 else None
+        if len_out != 0:
+            self.print_out(out[self.out_buf_offset:])
         self.out_buf_offset += len_out
         self.out_buf.release()
 
         self.err_buf.acquire()
         err = self.err_buf.getvalue()
         len_err = len(err) - self.err_buf_offset
-        self.print_err(err[self.err_buf_offset:]) if len_err != 0 else None
+        if len_err != 0:
+            self.print_err(err[self.err_buf_offset:])
         self.err_buf_offset += len_err
+        self.err_buf.release()
+
+    def capture_io_server(self):
+        self.out_buf.acquire()
+        out = self.out_buf.getvalue()
+        len_out = len(out) - self.server_out_buf_offset
+        if len_out != 0:
+            self.print_server_out(out[self.server_out_buf_offset:])
+        self.server_out_buf_offset += len_out
+        self.out_buf.release()
+
+        self.err_buf.acquire()
+        err = self.err_buf.getvalue()
+        len_err = len(err) - self.server_err_buf_offset
+        if len_err != 0:
+            self.print_server_err(err[self.server_err_buf_offset:])
+        self.server_err_buf_offset += len_err
         self.err_buf.release()
 
     def print_out(self, s):
         message = create_log_message(self.current_sdk_run_uuid, INFO_LEVEL, s)
-        self.server_manager.put_buf(message)
         self.std_out.write(s)
         self.write_to_log_file(s)
 
     def print_err(self, s):
         message = create_log_message(self.current_sdk_run_uuid, ERROR_LEVEL, s)
-        self.server_manager.put_buf(message)
         self.std_err.write(s)
         self.write_to_log_file(s)
+
+    def print_server_out(self, s):
+        message = create_log_message(self.current_sdk_run_uuid, INFO_LEVEL, s)
+        self.server_manager.put_buf(message)
+
+    def print_server_err(self, s):
+        message = create_log_message(self.current_sdk_run_uuid, ERROR_LEVEL, s)
+        self.server_manager.put_buf(message)
 
     def write_to_log_file(self, s):
         if self.log_file:
@@ -182,7 +212,8 @@ class HyperDash:
         # canceled by the user, but don't wait for all messages to
         # be flushed to server so we don't hang the user's terminal.
         self.server_manager.send_message(
-            create_run_ended_message(self.current_sdk_run_uuid, "user_canceled"),
+            create_run_ended_message(
+                self.current_sdk_run_uuid, "user_canceled"),
             raise_exceptions=False,
             timeout_seconds=1,
         )
@@ -250,9 +281,9 @@ class HyperDash:
 
         # Daemonize them so they don't impede shutdown if the user
         # keyboard interrupts
-        code_thread.daemon=True
-        network_thread.daemon=True
-      
+        code_thread.daemon = True
+        network_thread.daemon = True
+
         network_thread.start()
         code_thread.start()
 
@@ -260,18 +291,21 @@ class HyperDash:
         while True:
             try:
                 self.capture_io()
+                self.capture_io_server()
                 exited_cleanly, is_done = self.code_runner.is_done()
                 if is_done:
                     self.programmatic_exit = True
                     if exited_cleanly:
                         self.cleanup("success")
                         # Block until network loop says its done
-                        self.shutdown_main_channel.get(block=True, timeout=None)
+                        self.shutdown_main_channel.get(
+                            block=True, timeout=None)
                         return self.code_runner.get_return_val()
                     else:
                         self.cleanup("failure")
                         # Block until network loop says its done
-                        self.shutdown_main_channel.get(block=True, timeout=None)
+                        self.shutdown_main_channel.get(
+                            block=True, timeout=None)
                         raise self.code_runner.get_exception()
 
                 time.sleep(1)

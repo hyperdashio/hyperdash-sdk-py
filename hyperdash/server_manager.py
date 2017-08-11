@@ -24,6 +24,7 @@ from .sdk_message import create_heartbeat_message
 # Python 2/3 compatibility
 __metaclass__ = type
 
+counter = 0
 
 class ServerManagerBase():
     # TODO: Check type
@@ -121,6 +122,7 @@ class ServerManagerBase():
 class ServerManagerHTTP(ServerManagerBase):
 
     def tick(self, sdk_run_uuid):
+        global counter
         if self.unauthorized:
             returnValue(False)
 
@@ -152,6 +154,7 @@ class ServerManagerHTTP(ServerManagerBase):
             sent_successfully = False
             try:
                 res = self.send_message(message)
+                counter = counter+1
                 if res.status_code != 200:
                     # TODO: Server should return better error message
                     err_code = res.json()["code"]
@@ -165,7 +168,7 @@ class ServerManagerHTTP(ServerManagerBase):
                     "Unable to send message due to connection issues: {}".format(e),
                 )
             except Exception as e:
-                self.logger.debug(format_exc())
+                self.logger.info(format_exc())
                 self.log_error_once("Unable to communicate with Hyperdash servers")
 
             if sent_successfully is not True:
@@ -189,6 +192,7 @@ class ServerManagerHTTP(ServerManagerBase):
 
     def cleanup(self, sdk_run_uuid):
         # Try and flush any remaining messages
+        self.logger.info(counter)
         return self.tick(sdk_run_uuid)
 
     def __init__(self, custom_api_key_getter):
