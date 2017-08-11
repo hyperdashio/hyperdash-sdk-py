@@ -56,7 +56,7 @@ def signup(args=None):
         If you want to see Hyperdash in action, run `hyperdash demo`
         and then install our mobile app to monitor your job in realtime.
     """.format(get_hyperdash_json_home_path())
-    )
+          )
 
     _login(email, password)
 
@@ -119,7 +119,8 @@ def login(args=None):
     password = get_input("Password: ", True)
     success, default_api_key = _login(email, password)
     if success:
-        print("Successfully logged in! We also installed: {} as your default API key".format(default_api_key))
+        print("Successfully logged in! We also installed: {} as your default API key".format(
+            default_api_key))
 
 
 def _login(email, password):
@@ -145,7 +146,7 @@ def _login(email, password):
     # Add API key if available
     api_keys = get_api_keys(access_token)
     if api_keys and len(api_keys) > 0:
-        default_api_key = api_keys[0]    
+        default_api_key = api_keys[0]
         config['api_key'] = default_api_key
     else:
         print("Login failure: We were unable to retrieve your default API key.")
@@ -190,7 +191,7 @@ def keys(args=None):
     print("\nBelow are the API Keys associated with you account:\n\n")
 
     for i, api_key in enumerate(api_keys):
-        print("    {}) {}".format(i+1, api_key))
+        print("    {}) {}".format(i + 1, api_key))
 
     print("\n")
 
@@ -199,10 +200,10 @@ def run(args):
     @monitor(args.name)
     def wrapped():
         # Python detects when its connected to a pipe and buffers output.
-        # Spawn the users program with the PYTHONUNBUFFERED environment 
+        # Spawn the users program with the PYTHONUNBUFFERED environment
         # variable set in case they are running a Python program.
         subprocess_env = os.environ.copy()
-        subprocess_env["PYTHONUNBUFFERED"]="1"
+        subprocess_env["PYTHONUNBUFFERED"] = "1"
         # Spawn a subprocess with the user's command
         p = subprocess.Popen(
             ' '.join(args.args),
@@ -220,7 +221,7 @@ def run(args):
         # the monitor decorator)
         def stdout_loop():
             while True:
-                data = p.stdout.readline()
+                data = p.stdout.read(1)
                 if not data:
                     return
                 # In PY2 data is str, in PY3 its bytes
@@ -228,16 +229,17 @@ def run(args):
                     sys.stdout.write(data)
                     continue
                 sys.stdout.write(data.decode("utf-8", "ignore"))
+
         def stderr_loop():
             while True:
-                data = p.stderr.readline()
+                data = p.stderr.read(1)
                 if not data:
                     return
                 # In PY2 data is str, in PY3 its bytes
                 if PY2:
-                    sys.stdout.write(data)
+                    sys.stderr.write(data)
                     continue
-                sys.stdout.write(data.decode("utf-8", "ignore"))
+                sys.stderr.write(data.decode("utf-8", "ignore"))
 
         stdout_thread = Thread(target=stdout_loop)
         stderr_thread = Thread(target=stderr_loop)
@@ -259,6 +261,7 @@ def get_input(prompt, sensitive=False):
 
 def get_json(path, **kwargs):
     return requests.get("{}{}".format(get_base_url(), path), **kwargs)
+
 
 def post_json(path, data):
     return requests.post(
@@ -294,7 +297,8 @@ def write_hyperdash_json_helper(file, hyperdash_json):
         try:
             existing = json.loads(data)
         except ValueError:
-            raise Exception("{} is not valid JSON!".format(get_hyperdash_json_home_path()))
+            raise Exception("{} is not valid JSON!".format(
+                get_hyperdash_json_home_path()))
 
     existing.update(hyperdash_json)
 
