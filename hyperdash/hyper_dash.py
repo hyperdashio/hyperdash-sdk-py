@@ -134,8 +134,6 @@ class HyperDash:
         self.capture_io_local_server()
 
     def capture_io_local(self):
-        global counter
-        counter += 1
         self.out_buf.acquire()
         out = self.out_buf.getvalue()
         len_out = len(out) - self.out_buf_offset
