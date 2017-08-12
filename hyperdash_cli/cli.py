@@ -220,9 +220,8 @@ def run(args):
         # allows us read the pipe as fast as possible.
         #
         # We yield everytime we encounter whitespace instead
-        # of on every byte because if we did with for every
-        # byte it would break the UTF-8 decoding of multi-byte
-        # characters.
+        # of on every byte because yielding every byte individually
+        # would break the UTF-8 decoding of multi-byte characters.
         #
         # Before this we were using readline() which works in most
         # cases, but breaks for scripts that use loading bars
