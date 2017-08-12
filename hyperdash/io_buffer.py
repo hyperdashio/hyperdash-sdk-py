@@ -3,6 +3,7 @@ from threading import RLock
 
 from six import PY2
 
+
 def noop():
     pass
 
@@ -34,7 +35,7 @@ class IOBuffer:
 
     def set_on_flush(self, on_flush):
         self.on_flush = on_flush
-    
+
     def acquire(self):
         self.lock.acquire()
 

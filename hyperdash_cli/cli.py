@@ -56,7 +56,7 @@ def signup(args=None):
         If you want to see Hyperdash in action, run `hyperdash demo`
         and then install our mobile app to monitor your job in realtime.
     """.format(get_hyperdash_json_home_path())
-    )
+          )
 
     _login(email, password)
 
@@ -119,7 +119,8 @@ def login(args=None):
     password = get_input("Password: ", True)
     success, default_api_key = _login(email, password)
     if success:
-        print("Successfully logged in! We also installed: {} as your default API key".format(default_api_key))
+        print("Successfully logged in! We also installed: {} as your default API key".format(
+            default_api_key))
 
 
 def _login(email, password):
@@ -145,7 +146,7 @@ def _login(email, password):
     # Add API key if available
     api_keys = get_api_keys(access_token)
     if api_keys and len(api_keys) > 0:
-        default_api_key = api_keys[0]    
+        default_api_key = api_keys[0]
         config['api_key'] = default_api_key
     else:
         print("Login failure: We were unable to retrieve your default API key.")
@@ -190,7 +191,7 @@ def keys(args=None):
     print("\nBelow are the API Keys associated with you account:\n\n")
 
     for i, api_key in enumerate(api_keys):
-        print("    {}) {}".format(i+1, api_key))
+        print("    {}) {}".format(i + 1, api_key))
 
     print("\n")
 
@@ -199,10 +200,10 @@ def run(args):
     @monitor(args.name)
     def wrapped():
         # Python detects when its connected to a pipe and buffers output.
-        # Spawn the users program with the PYTHONUNBUFFERED environment 
+        # Spawn the users program with the PYTHONUNBUFFERED environment
         # variable set in case they are running a Python program.
         subprocess_env = os.environ.copy()
-        subprocess_env["PYTHONUNBUFFERED"]="1"
+        subprocess_env["PYTHONUNBUFFERED"] = "1"
         # Spawn a subprocess with the user's command
         p = subprocess.Popen(
             ' '.join(args.args),
@@ -211,7 +212,41 @@ def run(args):
             stderr=subprocess.PIPE,
             bufsize=0,
             env=subprocess_env,
+            # universal_newlines=True
         )
+
+        # Reads a pipe one character at a time, yielding
+        # buffers everytime it encounters whitespace. This
+        # allows us read the pipe as fast as possible.
+        #
+        # We yield everytime we encounter whitespace instead
+        # of on every byte because yielding every byte individually
+        # would break the UTF-8 decoding of multi-byte characters.
+        #
+        # Before this we were using readline() which works in most
+        # cases, but breaks for scripts that use loading bars
+        # like tqdm which do not output a \n everytime they
+        # update. Using read() doesn't work either because there
+        # is no guarantee of when that will be flushed so
+        # terminal updates can be delayed.
+        def generate_tokens(pipe):
+            buf = []
+            while True:
+                # read one byte
+                b = pipe.read(1)
+                # We're done
+                if not b:
+                    if buf:
+                        # Yield what we have
+                        yield b''.join(buf)
+                    return
+                # If its whitespace, yield what we have including the whitespace
+                if b.isspace() and buf:
+                    yield b''.join(buf) + b
+                    buf = []
+                # Otherwise grow the buf
+                else:
+                    buf.append(b)
 
         # The subprocess's output will be written to the associated
         # pipes. In order for the @monitor decorator to have access
@@ -219,25 +254,20 @@ def run(args):
         # stdout/stderr respectively (which have been redirected by
         # the monitor decorator)
         def stdout_loop():
-            while True:
-                data = p.stdout.readline()
-                if not data:
-                    return
+            for data in generate_tokens(p.stdout):
                 # In PY2 data is str, in PY3 its bytes
                 if PY2:
                     sys.stdout.write(data)
-                    continue
-                sys.stdout.write(data.decode("utf-8", "ignore"))
+                else:
+                    sys.stdout.write(data.decode("utf-8", "ignore"))
+
         def stderr_loop():
-            while True:
-                data = p.stderr.readline()
-                if not data:
-                    return
+            for data in generate_tokens(p.stderr):
                 # In PY2 data is str, in PY3 its bytes
                 if PY2:
-                    sys.stdout.write(data)
-                    continue
-                sys.stdout.write(data.decode("utf-8", "ignore"))
+                    sys.stderr.write(data)
+                else:
+                    sys.stderr.write(data.decode("utf-8", "ignore"))
 
         stdout_thread = Thread(target=stdout_loop)
         stderr_thread = Thread(target=stderr_loop)
@@ -259,6 +289,7 @@ def get_input(prompt, sensitive=False):
 
 def get_json(path, **kwargs):
     return requests.get("{}{}".format(get_base_url(), path), **kwargs)
+
 
 def post_json(path, data):
     return requests.post(
@@ -294,7 +325,8 @@ def write_hyperdash_json_helper(file, hyperdash_json):
         try:
             existing = json.loads(data)
         except ValueError:
-            raise Exception("{} is not valid JSON!".format(get_hyperdash_json_home_path()))
+            raise Exception("{} is not valid JSON!".format(
+                get_hyperdash_json_home_path()))
 
     existing.update(hyperdash_json)
 

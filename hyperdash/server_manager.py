@@ -55,7 +55,8 @@ class ServerManagerBase():
             else:
                 string_types = (basestring,)
             if not isinstance(api_key, string_types):
-                self.log_error_once("custom_api_key_getter returned non-string value")
+                self.log_error_once(
+                    "custom_api_key_getter returned non-string value")
             return api_key
 
         # Otherwise check for hyperdash.json and HYPERDASH_API_KEY env variable
@@ -63,10 +64,12 @@ class ServerManagerBase():
         from_env = self.get_api_key_from_env()
 
         if not (from_file or from_env):
-            self.log_error_once("Unable to detect API key in hyperdash.json or HYPERDASH_API_KEY environment variable")
+            self.log_error_once(
+                "Unable to detect API key in hyperdash.json or HYPERDASH_API_KEY environment variable")
 
         if from_file and from_env:
-            self.log_error_once("Found API key in hyperdash.json AND HYPERDASH_API_KEY environment variable. Environment variable will take precedence.")
+            self.log_error_once(
+                "Found API key in hyperdash.json AND HYPERDASH_API_KEY environment variable. Environment variable will take precedence.")
 
         self.api_key = from_env or from_file
         return self.api_key
@@ -96,7 +99,7 @@ class ServerManagerBase():
         self.logged_errors.add(message)
 
     def should_send_heartbeat(self):
-        return  (
+        return (
             len(self.out_buf) == 0 and
             self.last_message_sent_at and
             # TODO: Constantize/config
@@ -131,7 +134,8 @@ class ServerManagerHTTP(ServerManagerBase):
                 self.send_message(create_heartbeat_message(sdk_run_uuid))
             except BaseHTTPError as e:
                 self.log_error_once(
-                    "Unable to send heartbeat due to connection issues: {}".format(e),
+                    "Unable to send heartbeat due to connection issues: {}".format(
+                        e),
                 )
                 return False
             except Exception as e:
@@ -157,16 +161,19 @@ class ServerManagerHTTP(ServerManagerBase):
                     err_code = res.json()["code"]
                     if err_code == "api_key_requred":
                         self.unauthorized = True
-                    self.log_error_once("Error from Hyperdash server: {}".format(err_code))
+                    self.log_error_once(
+                        "Error from Hyperdash server: {}".format(err_code))
                 else:
                     sent_successfully = True
             except BaseHTTPError as e:
                 self.log_error_once(
-                    "Unable to send message due to connection issues: {}".format(e),
+                    "Unable to send message due to connection issues: {}".format(
+                        e),
                 )
             except Exception as e:
                 self.logger.debug(format_exc())
-                self.log_error_once("Unable to communicate with Hyperdash servers")
+                self.log_error_once(
+                    "Unable to communicate with Hyperdash servers")
 
             if sent_successfully is not True:
                 # Re-enque so message is not lost
