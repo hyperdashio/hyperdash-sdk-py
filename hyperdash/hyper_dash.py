@@ -20,7 +20,7 @@ from .sdk_message import create_run_started_message
 from .sdk_message import create_run_ended_message
 from .sdk_message import create_log_message
 
-
+counter = 0
 # Python 2/3 compatibility
 __metaclass__ = type
 
@@ -81,12 +81,12 @@ class HyperDash:
         )
 
         def on_stdout_flush():
-            self.capture_io()
+            self.capture_io_local()
             self.std_out.flush()
             self.flush_log_file()
 
         def on_stderr_flush():
-            self.capture_io()
+            self.capture_io_local()
             self.std_err.flush()
             self.flush_log_file()
 
@@ -130,7 +130,13 @@ class HyperDash:
         except IOError:
             return None, None
 
-    def capture_io(self):
+    def capture_all_io(self):
+        self.capture_io_local()
+        self.capture_io_local_server()
+
+    def capture_io_local(self):
+        global counter
+        counter += 1
         self.out_buf.acquire()
         out = self.out_buf.getvalue()
         len_out = len(out) - self.out_buf_offset
@@ -147,12 +153,13 @@ class HyperDash:
         self.err_buf_offset += len_err
         self.err_buf.release()
 
-    def capture_io_server(self):
+    def capture_io_local_server(self):
         self.out_buf.acquire()
         out = self.out_buf.getvalue()
         len_out = len(out) - self.server_out_buf_offset
         if len_out != 0:
-            self.print_server_out(out[self.server_out_buf_offset:])
+            self.send_print_out_to_server_manager(
+                out[self.server_out_buf_offset:])
         self.server_out_buf_offset += len_out
         self.out_buf.release()
 
@@ -160,7 +167,8 @@ class HyperDash:
         err = self.err_buf.getvalue()
         len_err = len(err) - self.server_err_buf_offset
         if len_err != 0:
-            self.print_server_err(err[self.server_err_buf_offset:])
+            self.send_print_err_to_server_manager(
+                err[self.server_err_buf_offset:])
         self.server_err_buf_offset += len_err
         self.err_buf.release()
 
@@ -174,11 +182,11 @@ class HyperDash:
         self.std_err.write(s)
         self.write_to_log_file(s)
 
-    def print_server_out(self, s):
+    def send_print_out_to_server_manager(self, s):
         message = create_log_message(self.current_sdk_run_uuid, INFO_LEVEL, s)
         self.server_manager.put_buf(message)
 
-    def print_server_err(self, s):
+    def send_print_err_to_server_manager(self, s):
         message = create_log_message(self.current_sdk_run_uuid, ERROR_LEVEL, s)
         self.server_manager.put_buf(message)
 
@@ -195,7 +203,7 @@ class HyperDash:
 
     def cleanup(self, exit_status):
         self.print_log_file_location()
-        self.capture_io()
+        self.capture_all_io()
         self.server_manager.put_buf(
             create_run_ended_message(self.current_sdk_run_uuid, exit_status),
         )
@@ -205,7 +213,7 @@ class HyperDash:
     def sudden_cleanup(self):
         self.print_log_file_location()
         # Send what we can to local log
-        self.capture_io()
+        self.capture_io_local()
         self.flush_log_file()
 
         # Make a best-effort attempt to notify server that the run was
@@ -287,8 +295,7 @@ class HyperDash:
         # Event loop
         while True:
             try:
-                self.capture_io()
-                self.capture_io_server()
+                self.capture_all_io()
                 exited_cleanly, is_done = self.code_runner.is_done()
                 if is_done:
                     self.programmatic_exit = True
@@ -297,6 +304,9 @@ class HyperDash:
                         # Block until network loop says its done
                         self.shutdown_main_channel.get(
                             block=True, timeout=None)
+                        global counter
+                        print("lmao")
+                        print(counter)
                         return self.code_runner.get_return_val()
                     else:
                         self.cleanup("failure")

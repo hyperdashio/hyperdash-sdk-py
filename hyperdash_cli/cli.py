@@ -255,20 +255,24 @@ def run(args):
         # stdout/stderr respectively (which have been redirected by
         # the monitor decorator)
         def stdout_loop():
-            for data in generate_tokens(p.stdout):
+            # for data in generate_tokens(p.stdout):
+            while True:
+                data = p.stdout.read(1)
+                if not data:
+                    return
                 # In PY2 data is str, in PY3 its bytes
                 if PY2:
                     sys.stdout.write(data)
-                    continue
-                sys.stdout.write(data.decode("utf-8", "ignore"))
+                else:
+                    sys.stdout.write(data.decode("utf-8", "ignore"))
 
         def stderr_loop():
             for data in generate_tokens(p.stderr):
                 # In PY2 data is str, in PY3 its bytes
                 if PY2:
                     sys.stderr.write(data)
-                    continue
-                sys.stderr.write(data.decode("utf-8", "ignore"))
+                else:
+                    sys.stderr.write(data.decode("utf-8", "ignore"))
 
         stdout_thread = Thread(target=stdout_loop)
         stderr_thread = Thread(target=stderr_loop)
