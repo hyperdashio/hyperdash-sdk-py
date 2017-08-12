@@ -141,8 +141,9 @@ class HyperDash:
 
     def capture_all_io(self):
         self.capture_io_local()
-        self.capture_io_local_server()
+        self.capture_io_server()
 
+    # Capture all IO for terminal/log file since we last checked
     def capture_io_local(self):
         self.out_buf.acquire()
         out = self.out_buf.getvalue()
@@ -160,7 +161,8 @@ class HyperDash:
         self.err_buf_offset += len_err
         self.err_buf.release()
 
-    def capture_io_local_server(self):
+    # Capture all IO for the ServerManager since we last checked
+    def capture_io_server(self):
         self.out_buf.acquire()
         out = self.out_buf.getvalue()
         len_out = len(out) - self.server_out_buf_offset
