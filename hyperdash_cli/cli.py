@@ -212,7 +212,42 @@ def run(args):
             stderr=subprocess.PIPE,
             bufsize=0,
             env=subprocess_env,
+            # universal_newlines=True
         )
+
+        # Reads a pipe one character at a time, yielding
+        # buffers everytime it encounters whitespace. This
+        # allows us read the pipe as fast as possible.
+        #
+        # We yield everytime we encounter whitespace instead
+        # of on every byte because if we did with for every
+        # byte it would break the UTF-8 decoding of multi-byte
+        # characters.
+        #
+        # Before this we were using readline() which works in most
+        # cases, but breaks for scripts that use loading bars
+        # like tqdm which do not output a \n everytime they
+        # update. Using read() doesn't work either because there
+        # is no guarantee of when that will be flushed so
+        # terminal updates can be delayed.
+        def generate_tokens(pipe):
+            buf = []
+            while True:
+                # read one byte
+                b = pipe.read(1)
+                # We're done
+                if not b:
+                    if buf:
+                        # Yield what we have
+                        yield b''.join(buf)
+                    return
+                # If its whitespace, yield what we have including the whitespace
+                if b.isspace() and buf:
+                    yield b''.join(buf) + b
+                    buf = []
+                # Otherwise grow the buf
+                else:
+                    buf.append(b)
 
         # The subprocess's output will be written to the associated
         # pipes. In order for the @monitor decorator to have access
@@ -220,10 +255,7 @@ def run(args):
         # stdout/stderr respectively (which have been redirected by
         # the monitor decorator)
         def stdout_loop():
-            while True:
-                data = p.stdout.read(1)
-                if not data:
-                    return
+            for data in generate_tokens(p.stdout):
                 # In PY2 data is str, in PY3 its bytes
                 if PY2:
                     sys.stdout.write(data)
@@ -231,10 +263,7 @@ def run(args):
                 sys.stdout.write(data.decode("utf-8", "ignore"))
 
         def stderr_loop():
-            while True:
-                data = p.stderr.read(1)
-                if not data:
-                    return
+            for data in generate_tokens(p.stderr):
                 # In PY2 data is str, in PY3 its bytes
                 if PY2:
                     sys.stderr.write(data)
