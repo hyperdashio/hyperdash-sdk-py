@@ -254,11 +254,7 @@ def run(args):
         # stdout/stderr respectively (which have been redirected by
         # the monitor decorator)
         def stdout_loop():
-            # for data in generate_tokens(p.stdout):
-            while True:
-                data = p.stdout.read(1)
-                if not data:
-                    return
+            for data in generate_tokens(p.stdout):
                 # In PY2 data is str, in PY3 its bytes
                 if PY2:
                     sys.stdout.write(data)
