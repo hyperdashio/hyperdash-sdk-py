@@ -20,7 +20,6 @@ from .sdk_message import create_run_started_message
 from .sdk_message import create_run_ended_message
 from .sdk_message import create_log_message
 
-counter = 0
 # Python 2/3 compatibility
 __metaclass__ = type
 
@@ -304,9 +303,6 @@ class HyperDash:
                         # Block until network loop says its done
                         self.shutdown_main_channel.get(
                             block=True, timeout=None)
-                        global counter
-                        print("lmao")
-                        print(counter)
                         return self.code_runner.get_return_val()
                     else:
                         self.cleanup("failure")
