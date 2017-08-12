@@ -73,9 +73,9 @@ class HyperDash:
         # want terminal/logs to update extremely quickly, but a small delay in
         # sending data to the server is acceptable so that more data can be batched
         # together. I.E if the user's code flushes 1000 times per second, we want
-        # to capture that in realtime, but only want to send one message to the
-        # server with the cumulative output of those 1000 flushes for the one second
-        # period.
+        # to capture that in realtime locally, but only want to send one message to
+        # the server with the cumulative output of those 1000 flushes for the one
+        # second period.
         self.server_out_buf_offset = 0
         self.server_err_buf_offset = 0
 
