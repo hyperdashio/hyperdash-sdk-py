@@ -50,9 +50,9 @@ def monitor(model_name, api_key_getter=None, capture_io=True):
             else:
                 f.callcount += 1
             try:
-                server_manager = ServerManagerHTTP(api_key_getter)
+                server_manager = ServerManagerHTTP(api_key_getter, logger)
                 hd_client = HDClient(logger)
-                code_runner = CodeRunner(f, hd_client, *args, **kwargs)
+                code_runner = CodeRunner(f, hd_client, logger, *args, **kwargs)
                 hyper_dash = HyperDash(
                     model_name,
                     current_sdk_run_uuid,

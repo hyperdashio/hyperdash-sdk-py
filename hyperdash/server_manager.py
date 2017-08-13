@@ -109,10 +109,10 @@ class ServerManagerBase():
     def cleanup(self, sdk_run_uuid):
         raise NotImplementedError()
 
-    def __init__(self, custom_api_key_getter):
+    def __init__(self, custom_api_key_getter, parent_logger):
         self.out_buf = deque()
         self.in_buf = deque()
-        self.logger = logging.getLogger("hyperdash.{}".format(__name__))
+        self.logger = parent_logger.getChild(__name__)
         self.custom_api_key_getter = custom_api_key_getter
         self.logged_errors = set()
         self.unauthorized = False
@@ -198,8 +198,8 @@ class ServerManagerHTTP(ServerManagerBase):
         # Try and flush any remaining messages
         return self.tick(sdk_run_uuid)
 
-    def __init__(self, custom_api_key_getter):
-        ServerManagerBase.__init__(self, custom_api_key_getter)
+    def __init__(self, custom_api_key_getter, parent_logger):
+        ServerManagerBase.__init__(self, custom_api_key_getter, parent_logger)
         # TODO: Keep alive
         # TODO: Timeout
         self.s = HTTPSession()

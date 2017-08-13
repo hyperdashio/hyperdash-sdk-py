@@ -13,7 +13,8 @@ __metaclass__ = type
 
 class CodeRunner:
 
-    def __init__(self, f, hd_client, *args, **kwargs):
+    def __init__(self, f, hd_client, parent_logger, *args, **kwargs):
+        self.logger = parent_logger.getChild(__name__)
         self.hd_client = hd_client
         self.f = self.wrap(f, *args, **kwargs)
         self.done = False
@@ -21,7 +22,6 @@ class CodeRunner:
         self.return_val = None
         self.exception = None
         self.lock = Lock()
-        self.logger = logging.getLogger("hyperdash.{}".format(__name__))
 
     def wrap(self, f, *args, **kwargs):
         arg_spec = getargspec(f)
