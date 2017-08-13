@@ -150,7 +150,6 @@ class ServerManagerHTTP(ServerManagerBase):
                 message = self.out_buf.popleft()
             # Empty
             except IndexError:
-                ("EMPTY")
                 # Clean exit
                 return True
 

@@ -6,6 +6,7 @@ import sys
 
 import uuid
 
+from .client import HDClient
 from .code_runner import CodeRunner
 from .hyper_dash import HyperDash
 from .io_buffer import IOBuffer
@@ -13,20 +14,7 @@ from .sdk_message import create_log_message
 from .server_manager import ServerManagerHTTP
 
 
-# TODO: Move me
-class HDHelper:
-    def __init__(self, current_sdk_run_uuid, buf, logger):
-        self.buf = buf
-        self.current_sdk_run_uuid = current_sdk_run_uuid
-        self.logger = logger
-
-    # def log(self, s, level="INFO"):
-    #     self.buf.write(s + "\n")
-    def log(self, s):
-        self.logger.info(s)
-
-
-def monitor(model_name, api_key_getter=None, capture_standard_streams=True):
+def monitor(model_name, api_key_getter=None, capture_io=True):
     def _monitor(f):
         def monitored(*args, **kwargs):
             # Create a UUID to uniquely identify this run from the SDK's point of view
@@ -50,7 +38,7 @@ def monitor(model_name, api_key_getter=None, capture_standard_streams=True):
             logger.setLevel(logging.INFO)
             logger.addHandler(logging.StreamHandler(out[0]))
 
-            if capture_standard_streams:
+            if capture_io:
                 # Redirect STDOUT/STDERR to buffers
                 sys.stdout, sys.stderr = out
 
@@ -63,8 +51,8 @@ def monitor(model_name, api_key_getter=None, capture_standard_streams=True):
                 f.callcount += 1
             try:
                 server_manager = ServerManagerHTTP(api_key_getter)
-                hd_helper = HDHelper(current_sdk_run_uuid, out[0], logger)
-                code_runner = CodeRunner(f, hd_helper, *args, **kwargs)
+                hd_client = HDClient(logger)
+                code_runner = CodeRunner(f, hd_client, *args, **kwargs)
                 hyper_dash = HyperDash(
                     model_name,
                     current_sdk_run_uuid,

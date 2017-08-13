@@ -15,8 +15,8 @@ __metaclass__ = type
 
 class CodeRunner:
 
-    def __init__(self, f, hd_helper, *args, **kwargs):
-        self.hd_helper = hd_helper
+    def __init__(self, f, hd_client, *args, **kwargs):
+        self.hd_client = hd_client
         self.f = self.wrap(f, *args, **kwargs)
         self.done = False
         self.exited_cleanly = True
@@ -28,9 +28,9 @@ class CodeRunner:
     def wrap(self, f, *args, **kwargs):
         arg_spec = getargspec(f)
         # Make sure function signature can handle injected hyperdash object
-        if "hd_helper" in arg_spec.args or arg_spec.keywords:
+        if "hd" in arg_spec.args or arg_spec.keywords:
             # TODO: Inject in constructor instead of instantiating here
-            kwargs["hd_helper"] = self.hd_helper
+            kwargs["hd_client"] = self.hd_client
 
         def wrapped():
             # TODO: Error handling

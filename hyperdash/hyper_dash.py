@@ -102,7 +102,7 @@ class HyperDash:
         self.out_buf.set_on_flush(on_stdout_flush)
         self.err_buf.set_on_flush(on_stderr_flush)
 
-        self.logger = parent_logger.getChild("grr")
+        self.logger = parent_logger.getChild(__name__)
         self.log_file, self.log_file_path = self.open_log_file()
         if not self.log_file:
             self.logger.error(
@@ -239,7 +239,6 @@ class HyperDash:
         self.shutdown_network_channel.put(True)
 
     def print_log_file_location(self):
-        self.logger.info(self.current_sdk_run_uuid)
         if self.log_file_path:
             self.logger.info("Logs for this run of {} are available locally at: {}".format(
                 self.job_name,
