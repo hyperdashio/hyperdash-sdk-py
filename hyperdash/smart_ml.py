@@ -35,3 +35,5 @@ class SmartML:
     def stop_timer(self, key):
         """Stop timing a sequence of code."""
         raise NotImplemented()
+
+    # def

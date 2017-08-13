@@ -125,7 +125,7 @@ class ServerManagerHTTP(ServerManagerBase):
 
     def tick(self, sdk_run_uuid):
         if self.unauthorized:
-            returnValue(False)
+            return False
 
         # If there are no messages to be sent, check if we
         # need to send a heartbeat
@@ -150,6 +150,7 @@ class ServerManagerHTTP(ServerManagerBase):
                 message = self.out_buf.popleft()
             # Empty
             except IndexError:
+                ("EMPTY")
                 # Clean exit
                 return True
 
