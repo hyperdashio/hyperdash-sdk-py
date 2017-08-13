@@ -28,7 +28,7 @@ class CodeRunner:
     def wrap(self, f, *args, **kwargs):
         arg_spec = getargspec(f)
         # Make sure function signature can handle injected hyperdash object
-        if "hd" in arg_spec.args or arg_spec.keywords:
+        if "hd_client" in arg_spec.args or arg_spec.keywords:
             # TODO: Inject in constructor instead of instantiating here
             kwargs["hd_client"] = self.hd_client
 
