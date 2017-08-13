@@ -6,8 +6,6 @@ import logging
 from threading import Lock
 from traceback import format_exc
 
-from .smart_ml import SmartML
-
 
 # Python 2/3 compatibility
 __metaclass__ = type

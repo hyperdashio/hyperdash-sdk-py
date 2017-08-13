@@ -12,6 +12,8 @@ import requests
 from hyperdash import monitor
 from mocks import init_mock_server
 from hyperdash.constants import get_hyperdash_logs_home_path_for_job
+from threading import Thread
+
 
 class TestSDK(object):
     @classmethod
@@ -23,7 +25,8 @@ class TestSDK(object):
             response.send_response(requests.codes.ok)
 
             # Add response headers.
-            response.send_header('Content-Type', 'application/json; charset=utf-8')
+            response.send_header(
+                'Content-Type', 'application/json; charset=utf-8')
             response.end_headers()
 
             # Add response content. In this case, we use the exact same response for
@@ -66,10 +69,10 @@ class TestSDK(object):
                     assert log in captured_out.encode("utf-8")
                     continue
                 assert log in captured_out
-            assert str(test_obj) in captured_out            
+            assert str(test_obj) in captured_out
 
             assert "error" not in captured_out
-        
+
         # Make sure logs were persisted
         log_dir = get_hyperdash_logs_home_path_for_job(job_name)
         latest_log_file = max([
@@ -97,5 +100,55 @@ class TestSDK(object):
             exception_raised = False
         except Exception as e:
             assert str(e) == expected_exception
-        
+
         assert exception_raised
+
+    def test_monitor_with_hd_client_and_no_capture_io(self):
+        job_name = "some_job_name"
+
+        with patch('sys.stdout', new=StringIO()) as fake_out:
+            def worker(thread_num, monitored):
+                @monitor(job_name, capture_io=False)
+                def monitored_func(hd_client):
+                    print("this should not be in there")
+                    hd_client.logger.info(thread_num)
+                    hd_client.logger.info(
+                        "thread {} is doing some work".format(thread_num))
+                    hd_client.logger.info("字")
+                    time.sleep(1)
+                return monitored_func
+
+            t1 = Thread(target=worker(1, True))
+            t2 = Thread(target=worker(2, True))
+            t3 = Thread(target=worker(3, True))
+
+            t1.daemon = True
+            t2.daemon = True
+            t3.daemon = True
+
+            t1.start()
+            t2.start()
+            t3.start()
+
+            t1.join()
+            t2.join()
+            t3.join()
+
+        # Make sure logs were persisted -- We use this as a proxy
+        # to make sure that each of the threads only captured its
+        # own output by checkign that each log file only has 5
+        # lines
+        log_dir = get_hyperdash_logs_home_path_for_job(job_name)
+        latest_log_files = sorted([
+            os.path.join(log_dir, filename) for
+            filename in
+            os.listdir(log_dir)
+        ], key=os.path.getmtime)[-3:]
+        for file_name in latest_log_files:
+            with open(file_name, 'r') as log_file:
+                data = log_file.read()
+                assert "this should not be in there" not in data
+                assert "is doing some work" in data
+                assert "字" in data
+                assert (len(data.split("\n")) == 5)
+            os.remove(file_name)
