@@ -1,14 +1,14 @@
 from setuptools import setup
 
 
-version = "0.7.6"
+version = "0.7.7"
 
 setup(
     name='hyperdash',
     packages=['hyperdash', 'hyperdash_cli'],
     install_requires=[
         'requests',
-        'six',
+        'six>=1.10.0',
         'python-slugify',
     ],
     entry_points={
