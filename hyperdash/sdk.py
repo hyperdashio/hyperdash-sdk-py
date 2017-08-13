@@ -4,53 +4,63 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import sys
 
+import uuid
+
+from .client import HDClient
 from .code_runner import CodeRunner
 from .hyper_dash import HyperDash
 from .io_buffer import IOBuffer
+from .sdk_message import create_log_message
 from .server_manager import ServerManagerHTTP
 
 
-# TODO: We should probably spawn a separate process instead of using a thread
-# so that it is easier to kill jobs, but that makes capturing STDOUT trickier
-# so we use threads for now.
-
-
-def monitor(model_name, api_key_getter=None):
+def monitor(model_name, api_key_getter=None, capture_io=True):
     def _monitor(f):
         def monitored(*args, **kwargs):
+            # Create a UUID to uniquely identify this run from the SDK's point of view
+            current_sdk_run_uuid = str(uuid.uuid4())
+
             # Buffers to which to redirect output so we can capture it
             out = [IOBuffer(), IOBuffer()]
-            logging.basicConfig(stream=out[0], level=logging.INFO)
 
             # Capture STDOUT/STDERR before they're modified
             old_out, old_err = sys.stdout, sys.stderr
+            # Include the model_name/UUID in the logger name to make
+            # sure that its always distinct, even if multiple runs
+            # of the same model are happening at the same time in
+            # different threads
+            logger = logging.getLogger(
+                "{}-{}".format(model_name, current_sdk_run_uuid))
+            # Remove any existing log handlers so it doesn't double log
+            logger.handlers = []
+            # Don't propagate to the root logger
+            logger.propagate = False
+            logger.setLevel(logging.INFO)
+            logger.addHandler(logging.StreamHandler(out[0]))
 
-            # Redirect STDOUT/STDERR to buffers
-            sys.stdout, sys.stderr = out
+            if capture_io:
+                # Redirect STDOUT/STDERR to buffers
+                sys.stdout, sys.stderr = out
 
             if not hasattr(f, 'callcount'):
                 f.callcount = 0
             if f.callcount >= 1:
-                raise Exception("Hyperdash does not support recursive functions!")
+                raise Exception(
+                    "Hyperdash does not support recursive functions!")
             else:
                 f.callcount += 1
-            # TODO: Instead of just returning once the function has completed,
-            # this decorator needs to act like a daemon that runs the users
-            # code, but also continues to wait for instructions from a remote
-            # server. So, for example, when the job is done the user could
-            # trigger another run from their phone OR while the job is running
-            # they could send a "stop" signal, in which case we kill the
-            # thread/process and then wait for a signal to start it back up again.
-            # This should be fairly easy to implement, but this is good enough
-            # for demo-ing purposes.
             try:
-                code_runner = CodeRunner(f, *args, **kwargs)
+                server_manager = ServerManagerHTTP(api_key_getter, logger)
+                hd_client = HDClient(logger)
+                code_runner = CodeRunner(f, hd_client, logger, *args, **kwargs)
                 hyper_dash = HyperDash(
                     model_name,
+                    current_sdk_run_uuid,
                     code_runner,
-                    ServerManagerHTTP(api_key_getter),
+                    server_manager,
                     out,
                     (old_out, old_err,),
+                    logger,
                 )
                 return_val = hyper_dash.run()
                 f.callcount -= 1
@@ -63,4 +73,3 @@ def monitor(model_name, api_key_getter=None):
                 sys.stdout, sys.stderr = old_out, old_err
         return monitored
     return _monitor
-
