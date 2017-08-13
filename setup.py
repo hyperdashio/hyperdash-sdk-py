@@ -8,7 +8,7 @@ setup(
     packages=['hyperdash', 'hyperdash_cli'],
     install_requires=[
         'requests',
-        'six',
+        'six>=1.5.0',
         'python-slugify',
     ],
     entry_points={
