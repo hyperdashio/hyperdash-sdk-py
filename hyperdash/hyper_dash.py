@@ -16,6 +16,7 @@ from slugify import slugify
 
 from .constants import get_hyperdash_logs_home_path
 from .constants import get_hyperdash_logs_home_path_for_job
+from .constants import MAX_LOG_SIZE_BYTES
 from .sdk_message import create_run_started_message
 from .sdk_message import create_run_ended_message
 from .sdk_message import create_log_message
@@ -165,7 +166,9 @@ class HyperDash:
     def capture_io_server(self):
         self.out_buf.acquire()
         out = self.out_buf.getvalue()
-        len_out = len(out) - self.server_out_buf_offset
+        # Limit number of bytes we will send to the server at once
+        len_out = min(len(out) - self.server_out_buf_offset,
+                      MAX_LOG_SIZE_BYTES)
         if len_out != 0:
             self.send_print_out_to_server_manager(
                 out[self.server_out_buf_offset:])
@@ -174,7 +177,9 @@ class HyperDash:
 
         self.err_buf.acquire()
         err = self.err_buf.getvalue()
-        len_err = len(err) - self.server_err_buf_offset
+        # Limit number of bytes we will send to the server at once
+        len_err = min(len(err) - self.server_err_buf_offset,
+                      MAX_LOG_SIZE_BYTES)
         if len_err != 0:
             self.send_print_err_to_server_manager(
                 err[self.server_err_buf_offset:])
