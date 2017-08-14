@@ -9,7 +9,7 @@ AUTH_KEY_NAME = "x-hyperdash-auth"
 HTTP_ENDPOINT = "/api/v1/sdk/http"
 CACHE_API_KEY_FOR_SECONDS = 300
 # 20 KiB
-MAX_LOG_SIZE_BYTES = 20480
+MAX_LOG_SIZE_BYTES = 2
 
 
 def get_base_http_url():
