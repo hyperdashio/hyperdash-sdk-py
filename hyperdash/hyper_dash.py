@@ -168,7 +168,7 @@ class HyperDash:
         len_out = len(out) - self.server_out_buf_offset
         if len_out != 0:
             self.send_print_out_to_server_manager(
-                out[self.server_out_buf_offset:])
+                out[self.server_out_buf_offset:self.server_out_buf_offset + len_out])
         self.server_out_buf_offset += len_out
         self.out_buf.release()
 
@@ -177,9 +177,12 @@ class HyperDash:
         len_err = len(err) - self.server_err_buf_offset
         if len_err != 0:
             self.send_print_err_to_server_manager(
-                err[self.server_err_buf_offset:])
+                err[self.server_err_buf_offset:self.server_err_buf_offset + len_err])
         self.server_err_buf_offset += len_err
         self.err_buf.release()
+
+        # Return whether or not any data was read
+        return not (len_out == 0 and len_err == 0)
 
     def print_out(self, s):
         message = create_log_message(self.current_sdk_run_uuid, INFO_LEVEL, s)
@@ -212,7 +215,11 @@ class HyperDash:
 
     def cleanup(self, exit_status):
         self.print_log_file_location()
-        self.capture_all_io()
+        self.capture_io_local()
+        # Continue collecting messages for the server until there are now more
+        while self.capture_io_server():
+            # Max 10 QPS
+            time.sleep(0.1)
         self.server_manager.put_buf(
             create_run_ended_message(self.current_sdk_run_uuid, exit_status),
         )

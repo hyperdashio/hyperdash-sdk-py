@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
+
 import json
 import os
+import random
+import string
 import time
 
 from six import StringIO
@@ -13,14 +16,27 @@ from hyperdash import monitor
 from mocks import init_mock_server
 from hyperdash.constants import get_hyperdash_logs_home_path_for_job
 from threading import Thread
+from hyperdash.constants import MAX_LOG_SIZE_BYTES
+from hyperdash.hyper_dash import HyperDash
+
+server_sdk_messages = []
 
 
 class TestSDK(object):
+    def setup(self):
+        global server_sdk_messages
+        server_sdk_messages = []
+
     @classmethod
     def setup_class(_cls):
         request_handle_dict = init_mock_server()
 
         def sdk_message(response):
+            global server_sdk_messages
+            message = json.loads(response.rfile.read(
+                int(response.headers['Content-Length'])))
+            server_sdk_messages.append(message)
+
             # Add response status code.
             response.send_response(requests.codes.ok)
 
@@ -46,6 +62,9 @@ class TestSDK(object):
             "Done!",
             # Handle unicode
             "字",
+            # Huge log,
+            ''.join(random.choice(string.lowercase)
+                    for x in range(10 * MAX_LOG_SIZE_BYTES))
         ]
         test_obj = {'some_obj_key': 'some_value'}
         expected_return = "final_result"
