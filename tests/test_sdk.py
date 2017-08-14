@@ -20,6 +20,11 @@ from hyperdash.hyper_dash import HyperDash
 
 server_sdk_messages = []
 
+if PY2:
+    lowercase_letters = string.lowercase
+else:
+    lowercase_letters = string.ascii_lowercase
+
 
 class TestSDK(object):
     def setup(self):
@@ -62,7 +67,7 @@ class TestSDK(object):
             # Handle unicode
             "字",
             # Huge log,
-            ''.join(random.choice(string.lowercase)
+            ''.join(random.choice(lowercase_letters)
                     for x in range(10 * MAX_LOG_SIZE_BYTES))
         ]
         test_obj = {'some_obj_key': 'some_value'}
@@ -130,7 +135,7 @@ class TestSDK(object):
             # Handle unicode
             "字",
             # Huge log,
-            ''.join(random.choice(string.lowercase)
+            ''.join(random.choice(lowercase_letters)
                     for x in range(10 * MAX_LOG_SIZE_BYTES))
         ]
         test_obj = {'some_obj_key': 'some_value'}

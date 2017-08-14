@@ -18,6 +18,7 @@ from hyperdash.constants import get_hyperdash_logs_home_path_for_job
 DEFAULT_API_KEY = "y9bhlYMBivCu8cBj6SQPAbwjxSqnbR1w23TtR9n9yOM="
 DEFAULT_ACCESS_TOKEN = "72a84fc0-b272-480a-807d-fd4a40ee2a66"
 
+
 class TestCLI(object):
     @classmethod
     def setup_class(_cls):
@@ -35,7 +36,8 @@ class TestCLI(object):
             response.send_response(requests.codes.ok)
 
             # Add response headers.
-            response.send_header('Content-Type', 'application/json; charset=utf-8')
+            response.send_header(
+                'Content-Type', 'application/json; charset=utf-8')
             response.end_headers()
 
             # Add response content.
@@ -50,7 +52,8 @@ class TestCLI(object):
             response.send_response(requests.codes.ok)
 
             # Add response headers.
-            response.send_header('Content-Type', 'application/json; charset=utf-8')
+            response.send_header(
+                'Content-Type', 'application/json; charset=utf-8')
             response.end_headers()
 
             # Add response content.
@@ -64,7 +67,8 @@ class TestCLI(object):
             response.send_response(requests.codes.ok)
 
             # Add response headers.
-            response.send_header('Content-Type', 'application/json; charset=utf-8')
+            response.send_header(
+                'Content-Type', 'application/json; charset=utf-8')
             response.end_headers()
 
             # Add response content.
@@ -78,7 +82,8 @@ class TestCLI(object):
             response.send_response(requests.codes.ok)
 
             # Add response headers.
-            response.send_header('Content-Type', 'application/json; charset=utf-8')
+            response.send_header(
+                'Content-Type', 'application/json; charset=utf-8')
             response.end_headers()
 
             # Add response content. In this case, we use the exact same response for
@@ -91,7 +96,7 @@ class TestCLI(object):
         request_handle_dict[("POST", "/api/v1/users")] = user_signup
         request_handle_dict[("POST", "/api/v1/sessions")] = user_login
         request_handle_dict[("GET", "/api/v1/users/api_keys")] = user_api_keys
-        request_handle_dict[("POST", "/api/v1/sdk/http")] = sdk_message        
+        request_handle_dict[("POST", "/api/v1/sdk/http")] = sdk_message
 
     def test_signup(self):
         vals = {
@@ -99,6 +104,7 @@ class TestCLI(object):
             ("Company (optional): ", ): "Company",
             ("Password (8 characters or more): ", True): "Password",
         }
+
         def side_effect(*args):
             return vals[args]
 
@@ -121,6 +127,7 @@ class TestCLI(object):
             ("Email address: ", ): "user@email.com",
             ("Password: ", True): "Password",
         }
+
         def side_effect(*args):
             return vals[args]
 
@@ -129,7 +136,8 @@ class TestCLI(object):
 
         expected_output = [
             "Successfully logged in!",
-            "We also installed: {} as your default API key".format(DEFAULT_API_KEY),
+            "We also installed: {} as your default API key".format(
+                DEFAULT_API_KEY),
         ]
         for expected in expected_output:
             assert_in(expected, fake_out.getvalue())
@@ -158,7 +166,7 @@ class TestCLI(object):
                     ]
                 )
             )
-        
+
         expected_output = [
             "hello world",
             "foo bar baz",
