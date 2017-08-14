@@ -15,6 +15,7 @@ from slugify import slugify
 
 from .constants import get_hyperdash_logs_home_path
 from .constants import get_hyperdash_logs_home_path_for_job
+from .constants import MAX_LOG_SIZE_BYTES
 from .sdk_message import create_run_started_message
 from .sdk_message import create_run_ended_message
 from .sdk_message import create_log_message
@@ -216,10 +217,9 @@ class HyperDash:
     def cleanup(self, exit_status):
         self.print_log_file_location()
         self.capture_io_local()
-        # Continue collecting messages for the server until there are now more
+        # Continue collecting messages for the server until there are no more
         while self.capture_io_server():
-            # Max 10 QPS
-            time.sleep(0.1)
+            time.sleep(MAX_LOG_SERVER_QPS_COMPLETE)
         self.server_manager.put_buf(
             create_run_ended_message(self.current_sdk_run_uuid, exit_status),
         )
