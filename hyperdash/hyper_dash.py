@@ -17,7 +17,6 @@ from slugify import slugify
 from .constants import get_hyperdash_logs_home_path
 from .constants import get_hyperdash_logs_home_path_for_job
 from .constants import MAX_LOG_SIZE_BYTES
-from .constants import MAX_LOG_SERVER_QPS_ACTIVE
 from .constants import MAX_LOG_SERVER_QPS_COMPLETE
 from .sdk_message import create_run_started_message
 from .sdk_message import create_run_ended_message
