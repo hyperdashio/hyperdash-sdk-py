@@ -161,8 +161,6 @@ class TestSDK(object):
                 all_text_sent_to_server = all_text_sent_to_server + \
                     payload["body"]
 
-        print("LMAO111")
-        print(all_text_sent_to_server)
         for log in logs:
             if PY2:
                 assert log in all_text_sent_to_server.encode("utf-8")
