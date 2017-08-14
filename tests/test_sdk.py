@@ -130,8 +130,8 @@ class TestSDK(object):
     def test_monitor_with_hd_client_and_no_capture_io(self):
         job_name = "some_job_name"
 
-        with patch('sys.stdout', new=StringIO()) as fake_out:
-            def worker(thread_num, monitored):
+        with patch('sys.stdout', new=StringIO()):
+            def worker(thread_num):
                 @monitor(job_name, capture_io=False)
                 def monitored_func(hd_client):
                     print("this should not be in there")
@@ -142,9 +142,9 @@ class TestSDK(object):
                     time.sleep(1)
                 return monitored_func
 
-            t1 = Thread(target=worker(1, True))
-            t2 = Thread(target=worker(2, True))
-            t3 = Thread(target=worker(3, True))
+            t1 = Thread(target=worker(1))
+            t2 = Thread(target=worker(2))
+            t3 = Thread(target=worker(3))
 
             t1.daemon = True
             t2.daemon = True
@@ -176,3 +176,34 @@ class TestSDK(object):
                 assert "字" in data
                 assert (len(data.split("\n")) == 5)
             os.remove(file_name)
+
+
+def test_monitor_yolo(self):
+    job_name = "some_job_name"
+
+    @monitor(job_name)
+    def test_job():
+        for log in logs:
+            print(log)
+            time.sleep(2)
+        print(test_obj)
+        time.sleep(2)
+        return expected_return
+
+    return_val = test_job()
+
+    assert return_val == expected_return
+
+    all_text_sent_to_server = ""
+    for msg in server_sdk_messages:
+        payload = msg["payload"]
+        if "body" in payload:
+            all_text_sent_to_server = all_text_sent_to_server + \
+                payload["body"]
+
+    for log in logs:
+        if PY2:
+            assert log in all_text_sent_to_server.encode("utf-8")
+            continue
+        assert log in all_text_sent_to_server
+    assert str(test_obj) in all_text_sent_to_server
