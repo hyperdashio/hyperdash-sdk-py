@@ -38,8 +38,8 @@ class TestSDK(object):
 
         def sdk_message(response):
             global server_sdk_messages
-            message = json.loads(str(response.rfile.read(
-                int(response.headers['Content-Length']))))
+            message = json.loads(response.rfile.read(
+                int(response.headers['Content-Length'])).decode('utf-8'))
 
             server_sdk_messages.append(message)
 
