@@ -68,6 +68,15 @@ class HyperDash:
         self.out_buf_offset = 0
         self.err_buf_offset = 0
 
+        # Used to keep track of the current position in the IO buffers for data
+        # that has been sent to the ServerManager. We separate the local/server
+        # offsets because in the case of the user's code frequently flushing, we
+        # want terminal/logs to update extremely quickly, but a small delay in
+        # sending data to the server is acceptable so that more data can be batched
+        # together. I.E if the user's code flushes 1000 times per second, we want
+        # to capture that in realtime locally, but only want to send one message to
+        # the server with the cumulative output of those 1000 flushes for the one
+        # second period.
         self.server_out_buf_offset = 0
         self.server_err_buf_offset = 0
 
@@ -181,7 +190,7 @@ class HyperDash:
         self.std_err.write(s)
         self.write_to_log_file(s)
 
-    # In the case that the amount of data is large, we will chunk it into
+    # In the case that the amount of data is large, we chunk it into
     # several smaller messages
     def send_print_to_server_manager(self, s, level):
         offset = 0
