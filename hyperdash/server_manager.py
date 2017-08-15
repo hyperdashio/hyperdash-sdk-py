@@ -143,8 +143,7 @@ class ServerManagerHTTP(ServerManagerBase):
                 self.log_error_once("Unable to send heartbeat message")
                 return False
 
-        # TODO: Max messages per tick?
-        # TODO: Message batching
+        # TODO: Move while loop out of tick function
         while True:
             try:
                 message = self.out_buf.popleft()
