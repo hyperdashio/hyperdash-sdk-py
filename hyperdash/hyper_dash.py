@@ -186,29 +186,6 @@ class HyperDash:
             self.server_err_buf_offset += len_err_server
         self.err_buf.release()
 
-# Capture all IO for the ServerManager since we last checked
-    def capture_io_server(self):
-        self.out_buf.acquire()
-        out = self.out_buf.getvalue()
-        len_out = len(out) - self.server_out_buf_offset
-        if len_out != 0:
-            self.send_print_out_to_server_manager(
-                out[self.server_out_buf_offset:self.server_out_buf_offset + len_out])
-        self.server_out_buf_offset += len_out
-        self.out_buf.release()
-
-        self.err_buf.acquire()
-        err = self.err_buf.getvalue()
-        len_err = len(err) - self.server_err_buf_offset
-        if len_err != 0:
-            self.send_print_err_to_server_manager(
-                err[self.server_err_buf_offset:self.server_err_buf_offset + len_err])
-        self.server_err_buf_offset += len_err
-        self.err_buf.release()
-
-        # Return whether or not any data was read
-        return not (len_out == 0 and len_err == 0)
-
     def print_out(self, s):
         self.std_out.write(s)
         self.write_to_log_file(s)
