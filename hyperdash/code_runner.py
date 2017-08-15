@@ -6,8 +6,6 @@ import logging
 from threading import Lock
 from traceback import format_exc
 
-from .smart_ml import SmartML
-
 
 # Python 2/3 compatibility
 __metaclass__ = type
@@ -15,21 +13,22 @@ __metaclass__ = type
 
 class CodeRunner:
 
-    def __init__(self, f, *args, **kwargs):
+    def __init__(self, f, hd_client, parent_logger, *args, **kwargs):
+        self.logger = parent_logger.getChild(__name__)
+        self.hd_client = hd_client
         self.f = self.wrap(f, *args, **kwargs)
         self.done = False
         self.exited_cleanly = True
         self.return_val = None
         self.exception = None
         self.lock = Lock()
-        self.logger = logging.getLogger("hyperdash.{}".format(__name__))
 
     def wrap(self, f, *args, **kwargs):
         arg_spec = getargspec(f)
         # Make sure function signature can handle injected hyperdash object
-        if 'hyperdash' in arg_spec.args or arg_spec.keywords:
+        if "hd_client" in arg_spec.args or arg_spec.keywords:
             # TODO: Inject in constructor instead of instantiating here
-            kwargs["hyperdash"] = SmartML()
+            kwargs["hd_client"] = self.hd_client
 
         def wrapped():
             # TODO: Error handling
@@ -53,7 +52,7 @@ class CodeRunner:
     def is_done(self):
         with self.lock:
             return self.exited_cleanly, self.done
-    
+
     def get_return_val(self):
         with self.lock:
             return self.return_val

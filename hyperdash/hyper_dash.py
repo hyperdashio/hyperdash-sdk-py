@@ -8,7 +8,6 @@ import logging
 import os
 import sys
 import time
-import uuid
 
 from six.moves.queue import Queue
 from six import PY2
@@ -39,21 +38,25 @@ class HyperDash:
     def __init__(
         self,
         job_name,
+        current_sdk_run_uuid,
         code_runner,
         server_manager,
         io_bufs,
         std_streams,
+        parent_logger,
     ):
         """Initialize the HyperDash class.
 
         args:
             1) job_name: Name of the current running job
-            2) code_runner: Instance of CodeRunner
-            3) server_manager: ServerManager instance
-            4) io_bufs: Tuple in the form of (StringIO(), StringIO(),)
-            5) std_streams: Tuple in the form of (StdOut, StdErr)
+            2) current_sdk_run_uuid: UUID of current run
+            3) code_runner: Instance of CodeRunner
+            4) server_manager: ServerManager instance
+            5) io_bufs: Tuple in the form of (StringIO(), StringIO(),)
+            6) std_streams: Tuple in the form of (StdOut, StdErr)
         """
         self.job_name = job_name
+        self.current_sdk_run_uuid = current_sdk_run_uuid
         self.code_runner = code_runner
         self.server_manager = server_manager
         self.out_buf, self.err_buf = io_bufs
@@ -79,9 +82,6 @@ class HyperDash:
         self.server_out_buf_offset = 0
         self.server_err_buf_offset = 0
 
-        # Create a UUID to uniquely identify this run from the SDK's point of view
-        self.current_sdk_run_uuid = str(uuid.uuid4())
-
         # Create run_start message before doing any other setup work to make sure that the
         # run_started message always precedes any other messages
         self.server_manager.put_buf(
@@ -102,7 +102,7 @@ class HyperDash:
         self.out_buf.set_on_flush(on_stdout_flush)
         self.err_buf.set_on_flush(on_stderr_flush)
 
-        self.logger = logging.getLogger("hyperdash.{}".format(__name__))
+        self.logger = parent_logger.getChild(__name__)
         self.log_file, self.log_file_path = self.open_log_file()
         if not self.log_file:
             self.logger.error(
@@ -235,7 +235,7 @@ class HyperDash:
             timeout_seconds=1,
         )
         # Prevent the network thread from continuing to run in the background
-        # even if SystemExit is caught        
+        # even if SystemExit is caught
         self.shutdown_network_channel.put(True)
 
     def print_log_file_location(self):
