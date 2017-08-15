@@ -8,6 +8,7 @@ import logging
 import os
 import sys
 import time
+import uuid
 
 from six.moves.queue import Queue
 from six import PY2

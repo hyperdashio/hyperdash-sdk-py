@@ -177,33 +177,44 @@ class TestSDK(object):
                 assert (len(data.split("\n")) == 5)
             os.remove(file_name)
 
+    def test_monitor_limits_server_message_size(self):
+        job_name = "some_job_name"
+        logs = [
+            "Beginning machine learning...",
+            "Still training...",
+            "Done!",
+            # Handle unicode
+            "字",
+            # Huge log,
+            ''.join(random.choice(lowercase_letters)
+                    for x in range(10 * MAX_LOG_SIZE_BYTES))
+        ]
+        test_obj = {'some_obj_key': 'some_value'}
+        expected_return = "final_result"
 
-def test_monitor_yolo(self):
-    job_name = "some_job_name"
-
-    @monitor(job_name)
-    def test_job():
-        for log in logs:
-            print(log)
+        @monitor(job_name)
+        def test_job():
+            for log in logs:
+                print(log)
+                time.sleep(2)
+            print(test_obj)
             time.sleep(2)
-        print(test_obj)
-        time.sleep(2)
-        return expected_return
+            return expected_return
 
-    return_val = test_job()
+        return_val = test_job()
 
-    assert return_val == expected_return
+        assert return_val == expected_return
 
-    all_text_sent_to_server = ""
-    for msg in server_sdk_messages:
-        payload = msg["payload"]
-        if "body" in payload:
-            all_text_sent_to_server = all_text_sent_to_server + \
-                payload["body"]
+        all_text_sent_to_server = ""
+        for msg in server_sdk_messages:
+            payload = msg["payload"]
+            if "body" in payload:
+                all_text_sent_to_server = all_text_sent_to_server + \
+                    payload["body"]
 
-    for log in logs:
-        if PY2:
-            assert log in all_text_sent_to_server.encode("utf-8")
-            continue
-        assert log in all_text_sent_to_server
-    assert str(test_obj) in all_text_sent_to_server
+        for log in logs:
+            if PY2:
+                assert log in all_text_sent_to_server.encode("utf-8")
+                continue
+            assert log in all_text_sent_to_server
+        assert str(test_obj) in all_text_sent_to_server
