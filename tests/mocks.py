@@ -7,17 +7,24 @@ import time
 
 handle_request_cache = dict()
 
+
 class MockServerRequestHandler(BaseHTTPRequestHandler):
 
     def handle_request(self, method, path):
         handle = handle_request_cache.get((method, path))
         if not handle:
-            raise Exception("Mock server called with unknown request {} {}".format(method, path))
+            raise Exception(
+                "Mock server called with unknown request {} {}".format(method, path))
 
         handle(self)
 
     def do_GET(self): self.handle_request("GET", self.path)
+
     def do_POST(self): self.handle_request("POST", self.path)
+
+    # Turn off HTTP logging so they don't interfere with STDOUT for our tests
+    def log_message(*args, **kwargs):
+        pass
 
 
 def init_mock_server():

@@ -8,6 +8,7 @@ import logging
 import os
 import sys
 import time
+import uuid
 
 from six.moves.queue import Queue
 from six import PY2
@@ -15,6 +16,7 @@ from slugify import slugify
 
 from .constants import get_hyperdash_logs_home_path
 from .constants import get_hyperdash_logs_home_path_for_job
+from .constants import MAX_LOG_SIZE_BYTES
 from .sdk_message import create_run_started_message
 from .sdk_message import create_run_ended_message
 from .sdk_message import create_log_message
@@ -82,6 +84,11 @@ class HyperDash:
         self.server_out_buf_offset = 0
         self.server_err_buf_offset = 0
 
+        self.time_since_last_server_capture = time.time()
+
+        # Create a UUID to uniquely identify this run from the SDK's point of view
+        self.current_sdk_run_uuid = str(uuid.uuid4())
+
         # Create run_start message before doing any other setup work to make sure that the
         # run_started message always precedes any other messages
         self.server_manager.put_buf(
@@ -90,12 +97,12 @@ class HyperDash:
         )
 
         def on_stdout_flush():
-            self.capture_io_local()
+            self.capture_io()
             self.std_out.flush()
             self.flush_log_file()
 
         def on_stderr_flush():
-            self.capture_io_local()
+            self.capture_io()
             self.std_err.flush()
             self.flush_log_file()
 
@@ -139,65 +146,64 @@ class HyperDash:
         except IOError:
             return None, None
 
-    def capture_all_io(self):
-        self.capture_io_local()
-        self.capture_io_server()
-
     # Capture all IO for terminal/log file since we last checked
-    def capture_io_local(self):
+    def capture_io(self, force_server_capture=False):
+        current_time = time.time()
+        should_send_to_server_manager = (
+            ((current_time - self.time_since_last_server_capture) > 1) or
+            force_server_capture
+        )
+        if should_send_to_server_manager:
+            self.time_since_last_server_capture = current_time
+
         self.out_buf.acquire()
         out = self.out_buf.getvalue()
+        # Local
         len_out = len(out) - self.out_buf_offset
         if len_out != 0:
             self.print_out(out[self.out_buf_offset:])
         self.out_buf_offset += len_out
+        # Server
+        len_out_server = len(out) - self.server_out_buf_offset
+        if len_out_server != 0 and should_send_to_server_manager:
+            self.send_print_to_server_manager(
+                out[self.server_out_buf_offset:], INFO_LEVEL)
+            self.server_out_buf_offset += len_out_server
         self.out_buf.release()
 
         self.err_buf.acquire()
         err = self.err_buf.getvalue()
+        # Local
         len_err = len(err) - self.err_buf_offset
         if len_err != 0:
             self.print_err(err[self.err_buf_offset:])
         self.err_buf_offset += len_err
-        self.err_buf.release()
-
-    # Capture all IO for the ServerManager since we last checked
-    def capture_io_server(self):
-        self.out_buf.acquire()
-        out = self.out_buf.getvalue()
-        len_out = len(out) - self.server_out_buf_offset
-        if len_out != 0:
-            self.send_print_out_to_server_manager(
-                out[self.server_out_buf_offset:])
-        self.server_out_buf_offset += len_out
-        self.out_buf.release()
-
-        self.err_buf.acquire()
-        err = self.err_buf.getvalue()
-        len_err = len(err) - self.server_err_buf_offset
-        if len_err != 0:
-            self.send_print_err_to_server_manager(
-                err[self.server_err_buf_offset:])
-        self.server_err_buf_offset += len_err
+        # Server
+        len_err_server = len(err) - self.server_err_buf_offset
+        if len_err_server != 0 and should_send_to_server_manager:
+            self.send_print_to_server_manager(
+                err[self.server_err_buf_offset:], ERROR_LEVEL)
+            self.server_err_buf_offset += len_err_server
         self.err_buf.release()
 
     def print_out(self, s):
-        message = create_log_message(self.current_sdk_run_uuid, INFO_LEVEL, s)
         self.std_out.write(s)
         self.write_to_log_file(s)
 
     def print_err(self, s):
-        message = create_log_message(self.current_sdk_run_uuid, ERROR_LEVEL, s)
         self.std_err.write(s)
         self.write_to_log_file(s)
 
-    def send_print_out_to_server_manager(self, s):
-        message = create_log_message(self.current_sdk_run_uuid, INFO_LEVEL, s)
-        self.server_manager.put_buf(message)
-
-    def send_print_err_to_server_manager(self, s):
-        message = create_log_message(self.current_sdk_run_uuid, ERROR_LEVEL, s)
-        self.server_manager.put_buf(message)
+    # In the case that the amount of data is large, we chunk it into
+    # several smaller messages
+    def send_print_to_server_manager(self, s, level):
+        offset = 0
+        while offset < len(s):
+            chunk_size = min(len(s) - offset, MAX_LOG_SIZE_BYTES)
+            message = create_log_message(
+                self.current_sdk_run_uuid, level, s[offset:offset + chunk_size])
+            self.server_manager.put_buf(message)
+            offset += chunk_size
 
     def write_to_log_file(self, s):
         if self.log_file:
@@ -212,7 +218,7 @@ class HyperDash:
 
     def cleanup(self, exit_status):
         self.print_log_file_location()
-        self.capture_all_io()
+        self.capture_io(force_server_capture=True)
         self.server_manager.put_buf(
             create_run_ended_message(self.current_sdk_run_uuid, exit_status),
         )
@@ -222,7 +228,7 @@ class HyperDash:
     def sudden_cleanup(self):
         self.print_log_file_location()
         # Send what we can to local log
-        self.capture_io_local()
+        self.capture_io()
         self.flush_log_file()
 
         # Make a best-effort attempt to notify server that the run was
@@ -307,7 +313,7 @@ class HyperDash:
         # Event loop
         while True:
             try:
-                self.capture_all_io()
+                self.capture_io()
                 exited_cleanly, is_done = self.code_runner.is_done()
                 if is_done:
                     self.programmatic_exit = True
