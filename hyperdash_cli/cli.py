@@ -236,17 +236,18 @@ def run(args):
                 b = pipe.read(1)
                 # We're done
                 if not b:
-                    if buf:
-                        # Yield what we have
-                        yield b''.join(buf)
+                    # if buf:
+                    #     # Yield what we have
+                    #     yield b''.join(buf)
                     return
+                yield b
                 # If its whitespace, yield what we have including the whitespace
-                if b.isspace() and buf:
-                    yield b''.join(buf) + b
-                    buf = []
-                # Otherwise grow the buf
-                else:
-                    buf.append(b)
+                # if b.isspace() and buf:
+                #     yield b''.join(buf) + b
+                #     buf = []
+                # # Otherwise grow the buf
+                # else:
+                #     buf.append(b)
 
         # The subprocess's output will be written to the associated
         # pipes. In order for the @monitor decorator to have access

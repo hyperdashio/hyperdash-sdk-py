@@ -208,7 +208,7 @@ class HyperDash:
     def write_to_log_file(self, s):
         if self.log_file:
             if PY2:
-                self.log_file.write(s.encode("utf-8"))
+                self.log_file.write(s)
             else:
                 self.log_file.write(s)
 
