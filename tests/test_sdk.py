@@ -90,9 +90,6 @@ class TestSDK(object):
             assert return_val == expected_return
             captured_out = fake_out.getvalue()
             for log in logs:
-                if PY2:
-                    assert log in captured_out.encode("utf-8")
-                    continue
                 assert log in captured_out
             assert str(test_obj) in captured_out
 

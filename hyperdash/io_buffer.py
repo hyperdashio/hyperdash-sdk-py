@@ -1,4 +1,4 @@
-from io import StringIO
+from io import BytesIO
 from threading import RLock
 
 from six import PY2
@@ -10,7 +10,7 @@ def noop():
 
 class IOBuffer:
     def __init__(self, on_flush=noop):
-        self.buf = StringIO()
+        self.buf = BytesIO()
         self.on_flush = on_flush
         self.lock = RLock()
 
@@ -19,10 +19,7 @@ class IOBuffer:
     def write(self, input):
         # Writes happen in other threads so we explicitly guard against them inside the class
         with self.lock:
-            if PY2:
-                self.buf.write(input.decode("utf-8", "ignore"))
-                return
-            self.buf.write(input)
+            self.buf.write(bytes(input))
 
     def getvalue(self):
         return self.buf.getvalue()

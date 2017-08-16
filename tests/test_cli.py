@@ -175,9 +175,6 @@ class TestCLI(object):
             "{'some_obj_key': 'some_value'}",
         ]
         for expected in expected_output:
-            if PY2:
-                assert_in(expected, fake_out.getvalue().encode("utf-8"))
-                continue
             assert_in(expected, fake_out.getvalue())
 
         # Make sure logs were persisted
