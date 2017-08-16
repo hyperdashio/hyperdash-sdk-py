@@ -3,3 +3,4 @@ env/
 build/
 dist/
 hyperdash.egg-info/
+.idea/

@@ -383,7 +383,9 @@ def main():
         title='subcommands',
         description='valid subcommands',
         help='additional help',
+        dest='subcommand'
     )
+    subparsers.required = True
 
     signup_parser = subparsers.add_parser('signup')
     signup_parser.set_defaults(func=signup)
