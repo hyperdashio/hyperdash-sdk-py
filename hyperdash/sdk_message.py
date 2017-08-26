@@ -14,7 +14,8 @@ def create_metric_message(sdk_run_uuid, value, name):
         sdk_run_uuid,
         TYPE_METRIC,
         {
-            name: value
+            "name": name,
+            "value": value
         }
     )
 
