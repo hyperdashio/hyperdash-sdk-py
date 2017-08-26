@@ -13,7 +13,6 @@ class HDClient:
         assert isinstance(name, six.string_types)
         assert value is not None and name is not None, 'value and name must not be None.'
 
-        message = self.server_manager.create_metric_message(self.sdk_run_uuid, value, name)
+        message = create_metric_message(self.sdk_run_uuid, value, name)
         self.server_manager.put_buf(message)
-        print("| {} = {} |".format(name, value))
-
+        self.logger.info("| {0} = {1:10f} |".format(name, value))

@@ -1,7 +1,9 @@
 import time
 import sys
+import hyperdash as hd
 
-def main():
+@hd.monitor("test job a")
+def main(hd_client):
     print("Doing the machine learning...")
     time.sleep(2)
     print("accuracy: 0%")
@@ -14,4 +16,5 @@ def main():
     time.sleep(2)
     print("accuracy: 100%")
 
+    hd_client.metric("example metric", 25)
 main()

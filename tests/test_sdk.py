@@ -6,6 +6,7 @@ import random
 import string
 import time
 
+import six
 from six import StringIO
 from six import PY2
 from mock import patch
@@ -117,7 +118,7 @@ class TestSDK(object):
 
         @monitor("test_job")
         def test_job():
-            time.sleep(2)
+            time.sleep(0.1)
             raise Exception(expected_exception)
 
         try:
@@ -197,9 +198,9 @@ class TestSDK(object):
         def test_job():
             for log in logs:
                 print(log)
-                time.sleep(2)
+                time.sleep(0.1)
             print(test_obj)
-            time.sleep(2)
+            time.sleep(0.1)
             return expected_return
 
         return_val = test_job()
@@ -221,7 +222,19 @@ class TestSDK(object):
         assert str(test_obj) in all_text_sent_to_server
 
     def test_metric(self):
+        print("test metric")
         job_name = "metric job name"
+
+        metrics = {
+            "acc": 99, 
+            "loss":0.0000000004, 
+            "val_loss":4324320984309284328743827432,
+            "mse": -431.321,
+            }
+                   
         @monitor(job_name)
         def test_job(hd_client):
-            hd_client.metric("acc", 0.043325198)
+            for key, val in six.iteritems(metrics):
+                hd_client.metric(key, val)
+        
+        test_job()
