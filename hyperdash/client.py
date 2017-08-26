@@ -1,6 +1,6 @@
 from .sdk_message import create_metric_message
 import numbers
-import types
+import six
 
 class HDClient:
     def __init__(self, logger, server_manager, sdk_run_uuid):
@@ -8,10 +8,12 @@ class HDClient:
         self.server_manager = server_manager
         self.sdk_run_uuid = sdk_run_uuid
 
-    def metric(self, value, name):
+    def metric(self, name, value):
         assert isinstance(value, numbers.Real), 'value must be a real number.'
-        assert isinstance(name, types.StringType)
+        assert isinstance(name, six.string_types)
         assert value is not None and name is not None, 'value and name must not be None.'
 
         message = self.server_manager.create_metric_message(self.sdk_run_uuid, value, name)
         self.server_manager.put_buf(message)
+        print("| {} = {} |".format(name, value))
+

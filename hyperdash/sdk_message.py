@@ -9,13 +9,13 @@ TYPE_ENDED = 'run_ended'
 TYPE_HEARTBEAT = 'heartbeat'
 TYPE_METRIC = 'metric'
 
-def create_metric_message(sdk_run_uuid, value, name):
+def create_metric_message(sdk_run_uuid, name, value):
     return create_sdk_message(
         sdk_run_uuid,
         TYPE_METRIC,
         {
             "name": name,
-            "value": value
+            "value": value,
         }
     )
 
