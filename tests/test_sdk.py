@@ -219,3 +219,9 @@ class TestSDK(object):
                 continue
             assert log in all_text_sent_to_server
         assert str(test_obj) in all_text_sent_to_server
+
+    def test_metric(self):
+        job_name = "metric job name"
+        @monitor(job_name)
+        def test_job(hd_client):
+            hd_client.metric("acc", 0.043325198)
