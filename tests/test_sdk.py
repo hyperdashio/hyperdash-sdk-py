@@ -238,3 +238,7 @@ class TestSDK(object):
                 hd_client.metric(key, val)
         
         test_job()
+        for msg in server_sdk_messages:
+            payload = msg["payload"]
+            print(payload)
+

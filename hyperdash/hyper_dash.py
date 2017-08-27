@@ -86,9 +86,6 @@ class HyperDash:
 
         self.time_since_last_server_capture = time.time()
 
-        # Create a UUID to uniquely identify this run from the SDK's point of view
-        self.current_sdk_run_uuid = str(uuid.uuid4())
-
         # Create run_start message before doing any other setup work to make sure that the
         # run_started message always precedes any other messages
         self.server_manager.put_buf(
