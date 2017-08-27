@@ -15,4 +15,4 @@ class HDClient:
 
         message = create_metric_message(self.sdk_run_uuid, name, value)
         self.server_manager.put_buf(message)
-        self.logger.info("| {0} = {1:10f} |".format(name, value))
+        self.logger.info("| {0}: {1:10f} |".format(name, value))

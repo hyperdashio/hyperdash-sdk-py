@@ -227,10 +227,10 @@ class TestSDK(object):
 
         metrics = {
             "acc": 99, 
-            "loss":0.0000000004, 
+            "loss":0.00000000041, 
             "val_loss":4324320984309284328743827432,
             "mse": -431.321,
-            }
+        }
                    
         @monitor(job_name)
         def test_job(hd_client):
@@ -238,7 +238,14 @@ class TestSDK(object):
                 hd_client.metric(key, val)
         
         test_job()
+
+        sent_vals = []
         for msg in server_sdk_messages:
             payload = msg["payload"]
-            print(payload)
+            if "name" in payload:
+                sent_vals.append(payload)
 
+        assert len(metrics) == len(sent_vals)
+        for pair in sent_vals:
+            assert metrics[pair["name"]] == pair["value"]
+        
