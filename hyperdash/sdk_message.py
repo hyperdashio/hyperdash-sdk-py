@@ -7,7 +7,17 @@ TYPE_LOG = 'log'
 TYPE_STARTED = 'run_started'
 TYPE_ENDED = 'run_ended'
 TYPE_HEARTBEAT = 'heartbeat'
+TYPE_METRIC = 'metric'
 
+def create_metric_message(sdk_run_uuid, name, value):
+    return create_sdk_message(
+        sdk_run_uuid,
+        TYPE_METRIC,
+        {
+            "name": name,
+            "value": value,
+        }
+    )
 
 def create_log_message(sdk_run_uuid, level, body):
     return create_sdk_message(

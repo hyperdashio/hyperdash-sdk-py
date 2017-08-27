@@ -16,12 +16,19 @@ test() {
   nosetests --verbosity=2 tests
 }
 
+debug_test() {
+  # example: ./run debug_test tests/test_sdk.py:TestSDK.test_metric
+  nosetests -s $1
+}
+
 [[ $@ ]] || { helptext; exit 0; }
 
 case "$1" in
   help) helptext
   ;;
   test) test
+  ;;
+  debug_test) debug_test
   ;;
   *)
     helptext
