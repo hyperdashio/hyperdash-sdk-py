@@ -66,10 +66,10 @@ def create_heartbeat_message(sdk_run_uuid):
     return create_sdk_message(sdk_run_uuid, TYPE_HEARTBEAT, {})
 
 
-def create_sdk_message(sdk_run_uuid, typeStr, payload):
+def create_sdk_message(sdk_run_uuid, type_str, payload):
     """Create a structured message for the server."""
     return json.dumps({
-        'type': typeStr,
+        'type': type_str,
         'timestamp': int(time.time() * 1000),
         'sdk_run_uuid': sdk_run_uuid,
         'payload': payload,
