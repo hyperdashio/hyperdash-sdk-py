@@ -153,6 +153,7 @@ class ServerManagerHTTP(ServerManagerBase):
                 return True
 
             sent_successfully = False
+            is_poison_pill = False
             try:
                 res = self.send_message(message)
                 if res.status_code != 200:
@@ -162,6 +163,11 @@ class ServerManagerHTTP(ServerManagerBase):
                         self.unauthorized = True
                     self.log_error_once(
                         "Error from Hyperdash server: {}".format(err_code))
+                    # Status code 400 indicates there is something malformed
+                    # about the message. Mark it as poison so we don't keep
+                    # retrying.
+                    if res.status_code == 400:
+                        is_poison_pill = True
                 else:
                     sent_successfully = True
             except BaseHTTPError as e:
@@ -174,7 +180,7 @@ class ServerManagerHTTP(ServerManagerBase):
                 self.log_error_once(
                     "Unable to communicate with Hyperdash servers")
 
-            if sent_successfully is not True:
+            if sent_successfully is not True and not is_poison_pill:
                 # Re-enque so message is not lost
                 self.out_buf.appendleft(message)
                 return False
