@@ -10,6 +10,7 @@ class HDClient:
         self.logger = logger
         self.server_manager = server_manager
         self.sdk_run_uuid = sdk_run_uuid
+        self.seen_params = set()
 
     def metric(self, name, value):
         assert isinstance(value, numbers.Real), 'value must be a real number.'
@@ -24,10 +25,12 @@ class HDClient:
         assert isinstance(name, six.string_types), 'name must be a string.'
         # Make sure its JSON serializable
         json.dumps(val)
+        assert name not in self.seen_params, 'hyperparameters should be unique and not reused'
 
         params = {}
         params[name] = val
         message = create_param_message(self.sdk_run_uuid, params)
         self.server_manager.put_buf(message)
+        self.seen_params.add(name)
         self.logger.info("{{ {}: {} }}".format(name, val))
         return val
