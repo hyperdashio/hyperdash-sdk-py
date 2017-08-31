@@ -8,16 +8,29 @@ TYPE_STARTED = 'run_started'
 TYPE_ENDED = 'run_ended'
 TYPE_HEARTBEAT = 'heartbeat'
 TYPE_METRIC = 'metric'
+TYPE_PARAM = 'param'
+
 
 def create_metric_message(sdk_run_uuid, name, value):
     return create_sdk_message(
         sdk_run_uuid,
         TYPE_METRIC,
         {
-            "name": name,
-            "value": value,
+            'name': name,
+            'value': value,
         }
     )
+
+
+def create_param_message(sdk_run_uuid, params):
+    return create_sdk_message(
+        sdk_run_uuid,
+        TYPE_PARAM,
+        {
+            'params': params
+        }
+    )
+
 
 def create_log_message(sdk_run_uuid, level, body):
     return create_sdk_message(
@@ -50,14 +63,14 @@ def create_run_ended_message(sdk_run_uuid, final_status):
 
 
 def create_heartbeat_message(sdk_run_uuid):
-  return create_sdk_message(sdk_run_uuid, TYPE_HEARTBEAT, {})
+    return create_sdk_message(sdk_run_uuid, TYPE_HEARTBEAT, {})
 
 
 def create_sdk_message(sdk_run_uuid, typeStr, payload):
-  """Create a structured message for the server."""
-  return json.dumps({
-      'type': typeStr,
-      'timestamp': int(time.time() * 1000),
-      'sdk_run_uuid': sdk_run_uuid,
-      'payload': payload,
-  })
+    """Create a structured message for the server."""
+    return json.dumps({
+        'type': typeStr,
+        'timestamp': int(time.time() * 1000),
+        'sdk_run_uuid': sdk_run_uuid,
+        'payload': payload,
+    })
