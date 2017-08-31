@@ -252,23 +252,29 @@ class TestSDK(object):
         params = (("lr", 0.5), ("loss_function", "MSE"))
 
         # Run a test job that emits some hyperparameters
-        @monitor("test params")
-        def test_job(hd_client):
-            for param in params:
-                hd_client.param(param[0], param[1])
-                time.sleep(0.1)
-        test_job()
+        with patch('sys.stdout', new=StringIO()) as fake_out:
+            @monitor("test params")
+            def test_job(hd_client):
+                for param in params:
+                    hd_client.param(param[0], param[1])
+                    time.sleep(0.1)
+            test_job()
 
         # Collect sent SDK messages that had a params payload
-        sent_vals = []
+        sent_messages = []
         for msg in server_sdk_messages:
             payload = msg["payload"]
             if "params" in payload:
-                sent_vals.append(payload)
+                sent_messages.append(payload)
 
         # Assert the sent SDK messages are what we expect
-        assert len(params) == len(sent_vals)
-        for i, pair in enumerate(sent_vals):
+        assert len(params) == len(sent_messages)
+        for i, message in enumerate(sent_messages):
             name = params[i][0]
             val = params[i][1]
-            assert pair['params'][name] == val
+            assert message['params'][name] == val
+
+        # Assert that the appropriate messages were printed to STDOUT
+        for param in params:
+            assert param[0] in fake_out.getvalue()
+            assert str(param[1]) in fake_out.getvalue()
