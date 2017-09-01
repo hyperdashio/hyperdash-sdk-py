@@ -236,6 +236,7 @@ class TestSDK(object):
         def test_job(hd_client):
             for key, val in six.iteritems(metrics):
                 hd_client.metric(key, val)
+            return
 
         test_job()
 
@@ -245,6 +246,8 @@ class TestSDK(object):
             if "name" in payload:
                 sent_vals.append(payload)
 
+        print("metrics",metrics)
+        print("sent_vals", sent_vals)
         assert len(metrics) == len(sent_vals)
         for pair in sent_vals:
             assert metrics[pair["name"]] == pair["value"]
@@ -259,6 +262,7 @@ class TestSDK(object):
                 for param in params:
                     hd_client.param(param[0], param[1])
                     time.sleep(0.1)
+                return
             test_job()
 
         # Collect sent SDK messages that had a params payload
@@ -283,5 +287,4 @@ class TestSDK(object):
     def test_experiment(self):
         exp = Experiment("MNIST")
         exp.param("batch size", 32)
-        exp.metric("loss",0.004)
         exp.end()
