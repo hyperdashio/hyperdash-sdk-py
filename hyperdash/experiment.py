@@ -67,21 +67,21 @@ class Experiment:
         # Buffers to which to redirect output so we can capture it
         out = [IOBuffer(), IOBuffer()]
 
-        logger = get_logger(model_name, current_sdk_run_uuid, out[0])
+        self._logger = get_logger(model_name, current_sdk_run_uuid, out[0])
 
         if capture_io:
             # Redirect STDOUT/STDERR to buffers
             sys.stdout, sys.stderr = out
 
         server_manager = ServerManagerHTTP(api_key_getter, logger)
-        self._hd_client = HDClient(logger, server_manager, current_sdk_run_uuid)
+        self._hd_client = HDClient(self._logger, server_manager, current_sdk_run_uuid)
         self._hd = HyperDash(
             model_name,
             current_sdk_run_uuid,
             server_manager,
             out,
             (old_out, old_err,),
-            logger,
+            self._logger,
             self._experiment_runner,
         )
         threading.Thread(target=_hd.run).start()
@@ -96,3 +96,6 @@ class Experiment:
         sys.stdout, sys.stderr = self._old_out, self._old_err
         self._experiment_runner.exited_cleanly = True
         self._experiment_runner.is_done = True
+    
+    def print(self, string):
+        self._logger.info(string)
