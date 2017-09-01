@@ -14,7 +14,7 @@ from nose.tools import assert_in
 import requests
 
 from hyperdash import monitor
-from hyperdash import experiment
+from hyperdash import Experiment
 from mocks import init_mock_server
 from hyperdash.constants import get_hyperdash_logs_home_path_for_job
 from threading import Thread

@@ -20,6 +20,7 @@ from .constants import MAX_LOG_SIZE_BYTES
 from .sdk_message import create_run_started_message
 from .sdk_message import create_run_ended_message
 from .sdk_message import create_log_message
+from .code_runner import CodeRunner
 
 # Python 2/3 compatibility
 __metaclass__ = type
