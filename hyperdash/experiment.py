@@ -1,11 +1,12 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
+
 from .client import HDClient
-from .monitor import monitor, get_logger
+from .monitor import monitor
 from .io_buffer import IOBuffer
 from .server_manager import ServerManagerHTTP
 from .hyper_dash import HyperDash
+from .utils import get_logger
 
-import logging
 import sys
 import uuid
 import threading
@@ -16,15 +17,14 @@ __metaclass__ = type
 class ExperimentRunner:
     def __init__(
         self,
-        is_done=False,
-        exited_cleanly=True,
-
+        done=False,
+        exit_cleanly=True,
     ):
-        self.is_done = is_done
-        self.exited_cleanly = exited_cleanly
+        self.done = done
+        self.exit_cleanly = exit_cleanly
 
     def is_done(self):
-        return self.exited_cleanly, self.is_done
+        return self.exit_cleanly, self.done
 
     def get_return_val(self):
         return None
@@ -73,29 +73,29 @@ class Experiment:
             # Redirect STDOUT/STDERR to buffers
             sys.stdout, sys.stderr = out
 
-        server_manager = ServerManagerHTTP(api_key_getter, logger)
+        server_manager = ServerManagerHTTP(api_key_getter, self._logger)
         self._hd_client = HDClient(self._logger, server_manager, current_sdk_run_uuid)
         self._hd = HyperDash(
             model_name,
             current_sdk_run_uuid,
             server_manager,
             out,
-            (old_out, old_err,),
+            (self._old_out, self._old_err,),
             self._logger,
             self._experiment_runner,
         )
-        threading.Thread(target=_hd.run).start()
+        threading.Thread(target=self._hd.run).start()
 
     def metric(self, name, value):
         return self._hd_client.metric(name, value)
 
     def param(self, name, value):
-        return self._hd_client.param(name, val)
+        return self._hd_client.param(name, value)
 
     def end(self):
         sys.stdout, sys.stderr = self._old_out, self._old_err
-        self._experiment_runner.exited_cleanly = True
-        self._experiment_runner.is_done = True
+        self._experiment_runner.exit_cleanly = True
+        self._experiment_runner.done = True
     
     def print(self, string):
-        self._logger.info(string)
+        self._logger.info()

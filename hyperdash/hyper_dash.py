@@ -4,7 +4,6 @@ from threading import Thread
 
 import datetime
 import json
-import logging
 import os
 import sys
 import time
