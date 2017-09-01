@@ -281,5 +281,7 @@ class TestSDK(object):
             assert str(param[1]) in fake_out.getvalue()
 
     def test_experiment(self):
-        exp = Experiment()
-        print(exp)
+        exp = Experiment("MNIST")
+        exp.param("batch size", 32)
+        exp.metric("loss",0.004)
+        exp.end()
