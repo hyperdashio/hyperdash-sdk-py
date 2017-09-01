@@ -1,6 +1,6 @@
 from six import PY2
 
-from .sdk import monitor
+from .monitor import monitor
 
 # Handle situation where IPython is not in the local environment OR
 # it is available, but we're not running in the context of an IPython

@@ -14,6 +14,7 @@ from nose.tools import assert_in
 import requests
 
 from hyperdash import monitor
+from hyperdash import experiment
 from mocks import init_mock_server
 from hyperdash.constants import get_hyperdash_logs_home_path_for_job
 from threading import Thread
@@ -278,3 +279,7 @@ class TestSDK(object):
         for param in params:
             assert param[0] in fake_out.getvalue()
             assert str(param[1]) in fake_out.getvalue()
+
+    def test_experiment(self):
+        exp = Experiment()
+        print(exp)
