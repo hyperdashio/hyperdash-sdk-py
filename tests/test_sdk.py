@@ -278,3 +278,83 @@ class TestSDK(object):
         for param in params:
             assert param[0] in fake_out.getvalue()
             assert str(param[1]) in fake_out.getvalue()
+
+    def test_iter(self):
+        # Run a test job that emits some hyperparameters
+        with patch('sys.stdout', new=StringIO()) as fake_out:
+            @monitor("test iter")
+            def test_job(hd_client):
+                hd_client.param('user_param', 'test')
+                for i in hd_client.iter(5):
+                    hd_client.metric('loss', i)
+                for i in hd_client.iter(3):
+                    hd_client.metric('loss', i)
+            test_job()
+
+        # Collect sent SDK messages that had a params payload
+        param_messages = []
+        for msg in server_sdk_messages:
+            payload = msg["payload"]
+            if "params" in payload:
+                param_messages.append(payload)
+
+        # Collect sent SDK messages that had a metrics payload
+        metric_messages = []
+        for msg in server_sdk_messages:
+            payload = msg["payload"]
+            if "name" in payload:
+                metric_messages.append(payload)
+
+        # Assert the sent param SDK messages are what we expect
+        expected_params = [
+            {
+                "params": {
+                    "user_param": "test",
+                },
+                "is_internal": False,
+            },
+            {
+                "params": {
+                    "hd_iter_0_epochs": 5,
+                },
+                "is_internal": True,
+            },
+            {
+                "params": {
+                    "hd_iter_1_epochs": 3,
+                },
+                "is_internal": True,
+            }
+        ]
+        assert len(expected_params) == len(param_messages)
+        for i, message in enumerate(param_messages):
+            assert message == expected_params[i]
+
+        # Assert the sent metric SDK messages are what we expect
+        expected_metrics = [
+            {'is_internal': True, 'name': 'hd_iter_0', 'value': 0},
+            {'is_internal': False, 'name': 'loss', 'value': 0},
+            {'is_internal': True, 'name': 'hd_iter_0', 'value': 1},
+            {'is_internal': False, 'name': 'loss', 'value': 1},
+            {'is_internal': True, 'name': 'hd_iter_0', 'value': 2},
+            {'is_internal': False, 'name': 'loss', 'value': 2},
+            {'is_internal': True, 'name': 'hd_iter_0', 'value': 3},
+            {'is_internal': False, 'name': 'loss', 'value': 3},
+            {'is_internal': True, 'name': 'hd_iter_0', 'value': 4},
+            {'is_internal': False, 'name': 'loss', 'value': 4},
+            {'is_internal': True, 'name': 'hd_iter_1', 'value': 0},
+            {'is_internal': False, 'name': 'loss', 'value': 0},
+            {'is_internal': True, 'name': 'hd_iter_1', 'value': 1},
+            {'is_internal': False, 'name': 'loss', 'value': 1},
+            {'is_internal': True, 'name': 'hd_iter_1', 'value': 2},
+            {'is_internal': False, 'name': 'loss', 'value': 2},
+        ]
+        assert len(expected_metrics) == len(metric_messages)
+        for i, message in enumerate(metric_messages):
+            assert message == expected_metrics[i]
+
+        # Assert that the internal parameters / metrics were not printed to STDOUT
+        assert 'hd_iter_0' not in fake_out.getvalue()
+        assert 'hd_iter_1' not in fake_out.getvalue()
+        assert 'hd_iter_0_epochs' not in fake_out.getvalue()
+        assert 'hd_iter_1_epochs' not in fake_out.getvalue()
