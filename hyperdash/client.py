@@ -64,7 +64,7 @@ class HDClient:
 
         The iter method automatically associated the number of iterations
         with the experiment, as well as emits timeseries data for each
-        iteration so that progressed can be monitored.
+        iteration so that progress can be monitored.
         """
         i = 0
         # Capture the existing iterator number
