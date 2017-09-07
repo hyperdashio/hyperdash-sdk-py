@@ -10,7 +10,7 @@ from .utils import get_logger
 import sys
 import uuid
 import threading
-
+from six.moves.queue import Queue
 # Python 2/3 compatibility
 __metaclass__ = type
 
@@ -84,7 +84,11 @@ class Experiment:
             self._logger,
             self._experiment_runner,
         )
-        threading.Thread(target=self._hd.run).start()
+        self.done_chan = Queue()
+        def test():
+            self._hd.run()
+            self.done_chan.put(True)
+        threading.Thread(target=test).start()
 
     def metric(self, name, value, log=True):
         return self._hd_client.metric(name, value, log)
@@ -96,9 +100,14 @@ class Experiment:
         return self._hd_client.iter(n,log)
 
     def end(self):
-        self._experiment_runner.exit_cleanly = self._hd.server_manager.cleanup(current_sdk_run_uuid)
+        # self._experiment_runner.exit_cleanly = self._hd.server_manager.cleanup(self._hd.current_sdk_run_uuid)
         sys.stdout, sys.stderr = self._old_out, self._old_err
+        self._experiment_runner.exit_cleanly = True
         self._experiment_runner.done = True
+        self.done_chan.get(block=True, timeout=None)
     
-    def print(self, string):
+    # Use to get selective logging while capture_io is disabled
+    # Example use case is if you output large amounts of text to STDOUT
+    # but only want a subset saved to disk
+    def log(self, string):
         self._logger.info(string)
