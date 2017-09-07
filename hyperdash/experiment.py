@@ -85,10 +85,10 @@ class Experiment:
             self._experiment_runner,
         )
         self.done_chan = Queue()
-        def test():
+        def run():
             self._hd.run()
             self.done_chan.put(True)
-        threading.Thread(target=test).start()
+        threading.Thread(target=run).start()
 
     def metric(self, name, value, log=True):
         return self._hd_client.metric(name, value, log)
@@ -100,14 +100,13 @@ class Experiment:
         return self._hd_client.iter(n,log)
 
     def end(self):
-        # self._experiment_runner.exit_cleanly = self._hd.server_manager.cleanup(self._hd.current_sdk_run_uuid)
         sys.stdout, sys.stderr = self._old_out, self._old_err
         self._experiment_runner.exit_cleanly = True
         self._experiment_runner.done = True
         self.done_chan.get(block=True, timeout=None)
     
-    # Use to get selective logging while capture_io is disabled
-    # Example use case is if you output large amounts of text to STDOUT
-    # but only want a subset saved to disk
+    # For selective logging while capture_io is disabled
+    # Main use case is if you output large amounts of text to STDOUT
+    # but only want a subset saved to logs
     def log(self, string):
         self._logger.info(string)
