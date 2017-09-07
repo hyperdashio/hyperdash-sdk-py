@@ -98,4 +98,4 @@ class Experiment:
         self._experiment_runner.done = True
     
     def print(self, string):
-        self._logger.info()
+        self._logger.info(string)
