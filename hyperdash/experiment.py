@@ -86,15 +86,18 @@ class Experiment:
         )
         threading.Thread(target=self._hd.run).start()
 
-    def metric(self, name, value):
-        return self._hd_client.metric(name, value)
+    def metric(self, name, value, log=True):
+        return self._hd_client.metric(name, value, log)
 
-    def param(self, name, value):
-        return self._hd_client.param(name, value)
+    def param(self, name, value, log=True):
+        return self._hd_client.param(name, value, log)
+
+    def iter(self, n, log=True):
+        return self._hd_client.iter(n,log)
 
     def end(self):
+        self._experiment_runner.exit_cleanly = self._hd.server_manager.cleanup(current_sdk_run_uuid)
         sys.stdout, sys.stderr = self._old_out, self._old_err
-        self._experiment_runner.exit_cleanly = True
         self._experiment_runner.done = True
     
     def print(self, string):
