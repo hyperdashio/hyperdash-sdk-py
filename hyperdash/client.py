@@ -59,7 +59,7 @@ class HDClient:
             self.logger.info("{{ {}: {} }}".format(name, val))
         return val
 
-    def iter(self, n):
+    def iter(self, n, log=True):
         """Returns an iterator with the specified number of iterations.
 
         The iter method automatically associated the number of iterations
@@ -74,6 +74,8 @@ class HDClient:
         self._param("hd_iter_{}_epochs".format(iter_num),
                     n, log=False, is_internal=True)
         while i < n:
+            if log:
+                self.logger.info("| Iteration {} of {} |".format(i, n - 1))
             self._metric("hd_iter_{}".format(iter_num),
                          i, log=False, is_internal=True)
             yield i

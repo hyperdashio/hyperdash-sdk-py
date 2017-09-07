@@ -358,3 +358,7 @@ class TestSDK(object):
         assert "hd_iter_1" not in fake_out.getvalue()
         assert "hd_iter_0_epochs" not in fake_out.getvalue()
         assert "hd_iter_1_epochs" not in fake_out.getvalue()
+        for i in range(5):
+            assert "| Iteration {} of {} |".format(i, 4) in fake_out.getvalue()
+        for i in range(3):
+            assert "| Iteration {} of {} |".format(i, 2) in fake_out.getvalue()
