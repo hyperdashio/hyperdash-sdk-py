@@ -350,6 +350,7 @@ class TestSDK(object):
         # Make sure logs were persisted
         expect_logs = [
             "{ batch size: 32 }",
+            "test print",
             "| Iteration 0 of 1 |",
             "| accuracy:   0.000000 |",
         ]
