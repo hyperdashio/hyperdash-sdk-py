@@ -286,9 +286,85 @@ class TestSDK(object):
 
     def test_experiment(self):
         # Run a test job via the Experiment API
-        exp = hd.Experiment("MNIST")
-        exp.param("batch size", 32)
-        exp.end()
+        # Make sure log file is where is supposed to be
+        # look at decorator
+        # verify run start/stop is sent
+        with patch("sys.stdout", new=StringIO()) as fake_out:
+            exp = hd.Experiment("MNIST")
+            exp.print("test print")
+            exp.param("gamma", 0.001)
+            for i in exp.iter(2):
+                exp.param("accuracy", i*20)
+            exp.end()
+        
+        # Test params match what is expected
+        param_messages = []
+        for msg in server_sdk_messages:
+            payload = msg["payload"]
+            if "params" in payload:
+                param_messages.append(payload)
+
+        expected_params = [
+            {
+                "params": {
+                    "batch size": 32,
+                },
+                "is_internal": False,
+            },
+            {
+                "params": {
+                    "hd_iter_0_epochs": 2,
+                },
+                "is_internal": True,
+            },
+        ]    
+        assert len(expected_params) == len(param_messages)
+        for i, message in enumerate(param_messages):
+            assert message == expected_params[i]
+
+        # Test metrics match what is expected
+        metric_messages = []
+        for msg in server_sdk_messages:
+            payload = msg["payload"]
+            if "name" in payload:
+                metric_messages.append(payload)
+
+        expected_metrics = [
+            {"is_internal": True, "name": "hd_iter_0", "value": 0},
+            {"is_internal": False, "name": "loss", "value": 0},
+            {"is_internal": True, "name": "hd_iter_0", "value": 1},
+            {"is_internal": False, "name": "loss", "value": 1},
+       ]
+        assert len(expected_metrics) == len(metric_messages)
+        for i, message in enumerate(metric_messages):
+            assert message == expected_metrics[i]
+        
+        captured_out = fake_out.getvalue()
+        assert "error" not in captured_out
+                # Make sure logs were persisted
+
+        expected_logs = [
+            "Beginning machine learning...",
+            "Still training...",
+            "Done!",
+            # Handle unicode
+            "字",
+            # Huge log
+            "".join(random.choice(lowercase_letters)
+                    for x in range(10 * MAX_LOG_SIZE_BYTES)),
+        ]
+        log_dir = get_hyperdash_logs_home_path_for_job(job_name)
+        latest_log_file = max([
+            os.path.join(log_dir, filename) for
+            filename in
+            os.listdir(log_dir)
+        ], key=os.path.getmtime)
+        with open(latest_log_file, "r") as log_file:
+            data = log_file.read()
+            for log in expected_logs:
+                assert_in(log, data)
+        os.remove(latest_log_file)
+
 
     def test_iter(self):
         # Run a test job that includes the iterator function
