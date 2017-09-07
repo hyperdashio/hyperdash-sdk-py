@@ -41,7 +41,7 @@ class TestSDK(object):
         def sdk_message(response):
             global server_sdk_messages
             message = json.loads(response.rfile.read(
-                int(response.headers['Content-Length'])).decode('utf-8'))
+                int(response.headers["Content-Length"])).decode("utf-8"))
 
             server_sdk_messages.append(message)
 
@@ -50,7 +50,7 @@ class TestSDK(object):
 
             # Add response headers.
             response.send_header(
-                'Content-Type', 'application/json; charset=utf-8')
+                "Content-Type", "application/json; charset=utf-8")
             response.end_headers()
 
             # Add response content. In this case, we use the exact same response for
@@ -58,7 +58,7 @@ class TestSDK(object):
             # body of the response unless there is an error.
             response_content = json.dumps({})
 
-            response.wfile.write(response_content.encode('utf-8'))
+            response.wfile.write(response_content.encode("utf-8"))
 
         request_handle_dict[("POST", "/api/v1/sdk/http")] = sdk_message
 
@@ -70,14 +70,14 @@ class TestSDK(object):
             "Done!",
             # Handle unicode
             "字",
-            # Huge log,
-            ''.join(random.choice(lowercase_letters)
-                    for x in range(10 * MAX_LOG_SIZE_BYTES))
+            # Huge log
+            "".join(random.choice(lowercase_letters)
+                    for x in range(10 * MAX_LOG_SIZE_BYTES)),
         ]
-        test_obj = {'some_obj_key': 'some_value'}
+        test_obj = {"some_obj_key": "some_value"}
         expected_return = "final_result"
 
-        with patch('sys.stdout', new=StringIO()) as fake_out:
+        with patch("sys.stdout", new=StringIO()) as fake_out:
             @monitor(job_name)
             def test_job():
                 for log in logs:
@@ -107,7 +107,7 @@ class TestSDK(object):
             filename in
             os.listdir(log_dir)
         ], key=os.path.getmtime)
-        with open(latest_log_file, 'r') as log_file:
+        with open(latest_log_file, "r") as log_file:
             data = log_file.read()
             for log in logs:
                 assert_in(log, data)
@@ -133,7 +133,7 @@ class TestSDK(object):
     def test_monitor_with_hd_client_and_no_capture_io(self):
         job_name = "some_job_name"
 
-        with patch('sys.stdout', new=StringIO()):
+        with patch("sys.stdout", new=StringIO()):
             def worker(thread_num):
                 @monitor(job_name, capture_io=False)
                 def monitored_func(hd_client):
@@ -172,7 +172,7 @@ class TestSDK(object):
             os.listdir(log_dir)
         ], key=os.path.getmtime)[-3:]
         for file_name in latest_log_files:
-            with open(file_name, 'r') as log_file:
+            with open(file_name, "r") as log_file:
                 data = log_file.read()
                 assert "this should not be in there" not in data
                 assert "is doing some work" in data
@@ -188,11 +188,11 @@ class TestSDK(object):
             "Done!",
             # Handle unicode
             "字",
-            # Huge log,
-            ''.join(random.choice(lowercase_letters)
-                    for x in range(10 * MAX_LOG_SIZE_BYTES))
+            # Huge log
+            "".join(random.choice(lowercase_letters)
+                    for x in range(10 * MAX_LOG_SIZE_BYTES)),
         ]
-        test_obj = {'some_obj_key': 'some_value'}
+        test_obj = {"some_obj_key": "some_value"}
         expected_return = "final_result"
 
         @monitor(job_name)
@@ -256,7 +256,7 @@ class TestSDK(object):
         params = (("lr", 0.5), ("loss_function", "MSE"))
 
         # Run a test job that emits some hyperparameters
-        with patch('sys.stdout', new=StringIO()) as fake_out:
+        with patch("sys.stdout", new=StringIO()) as fake_out:
             @monitor("test params")
             def test_job(hd_client):
                 for param in params:
@@ -277,7 +277,7 @@ class TestSDK(object):
         for i, message in enumerate(sent_messages):
             name = params[i][0]
             val = params[i][1]
-            assert message['params'][name] == val
+            assert message["params"][name] == val
 
         # Assert that the appropriate messages were printed to STDOUT
         for param in params:
@@ -288,3 +288,87 @@ class TestSDK(object):
         exp = Experiment("MNIST")
         exp.param("batch size", 32)
         exp.end()
+
+    def test_iter(self):
+        # Run a test job that includes the iterator function
+        with patch("sys.stdout", new=StringIO()) as fake_out:
+            @monitor("test iter")
+            def test_job(hd_client):
+                hd_client.param("user_param", "test")
+                for i in hd_client.iter(5):
+                    hd_client.metric("loss", i)
+                for i in hd_client.iter(3):
+                    hd_client.metric("loss", i)
+            test_job()
+
+        # Collect sent SDK messages that had a params payload
+        param_messages = []
+        for msg in server_sdk_messages:
+            payload = msg["payload"]
+            if "params" in payload:
+                param_messages.append(payload)
+
+        # Collect sent SDK messages that had a metrics payload
+        metric_messages = []
+        for msg in server_sdk_messages:
+            payload = msg["payload"]
+            if "name" in payload:
+                metric_messages.append(payload)
+
+        # Assert the sent param SDK messages are what we expect
+        expected_params = [
+            {
+                "params": {
+                    "user_param": "test",
+                },
+                "is_internal": False,
+            },
+            {
+                "params": {
+                    "hd_iter_0_epochs": 5,
+                },
+                "is_internal": True,
+            },
+            {
+                "params": {
+                    "hd_iter_1_epochs": 3,
+                },
+                "is_internal": True,
+            }
+        ]
+        assert len(expected_params) == len(param_messages)
+        for i, message in enumerate(param_messages):
+            assert message == expected_params[i]
+
+        # Assert the sent metric SDK messages are what we expect
+        expected_metrics = [
+            {"is_internal": True, "name": "hd_iter_0", "value": 0},
+            {"is_internal": False, "name": "loss", "value": 0},
+            {"is_internal": True, "name": "hd_iter_0", "value": 1},
+            {"is_internal": False, "name": "loss", "value": 1},
+            {"is_internal": True, "name": "hd_iter_0", "value": 2},
+            {"is_internal": False, "name": "loss", "value": 2},
+            {"is_internal": True, "name": "hd_iter_0", "value": 3},
+            {"is_internal": False, "name": "loss", "value": 3},
+            {"is_internal": True, "name": "hd_iter_0", "value": 4},
+            {"is_internal": False, "name": "loss", "value": 4},
+            {"is_internal": True, "name": "hd_iter_1", "value": 0},
+            {"is_internal": False, "name": "loss", "value": 0},
+            {"is_internal": True, "name": "hd_iter_1", "value": 1},
+            {"is_internal": False, "name": "loss", "value": 1},
+            {"is_internal": True, "name": "hd_iter_1", "value": 2},
+            {"is_internal": False, "name": "loss", "value": 2},
+        ]
+        assert len(expected_metrics) == len(metric_messages)
+        for i, message in enumerate(metric_messages):
+            assert message == expected_metrics[i]
+
+        # Assert that the internal parameters / metrics were not printed to STDOUT
+        assert "hd_iter_0" not in fake_out.getvalue()
+        assert "hd_iter_1" not in fake_out.getvalue()
+        assert "hd_iter_0_epochs" not in fake_out.getvalue()
+        assert "hd_iter_1_epochs" not in fake_out.getvalue()
+        for i in range(5):
+            assert "| Iteration {} of {} |".format(i, 4) in fake_out.getvalue()
+        for i in range(3):
+            assert "| Iteration {} of {} |".format(i, 2) in fake_out.getvalue()

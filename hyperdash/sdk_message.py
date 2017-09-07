@@ -11,23 +11,25 @@ TYPE_METRIC = 'metric'
 TYPE_PARAM = 'param'
 
 
-def create_metric_message(sdk_run_uuid, name, value):
+def create_metric_message(sdk_run_uuid, name, value, is_internal):
     return create_sdk_message(
         sdk_run_uuid,
         TYPE_METRIC,
         {
             'name': name,
             'value': value,
+            'is_internal': is_internal,
         }
     )
 
 
-def create_param_message(sdk_run_uuid, params):
+def create_param_message(sdk_run_uuid, params, is_internal):
     return create_sdk_message(
         sdk_run_uuid,
         TYPE_PARAM,
         {
-            'params': params
+            'params': params,
+            'is_internal': is_internal,
         }
     )
 
