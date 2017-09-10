@@ -246,8 +246,6 @@ class TestSDK(object):
             if "name" in payload:
                 sent_vals.append(payload)
 
-        print("metrics",metrics)
-        print("sent_vals", sent_vals)
         assert len(metrics) == len(sent_vals)
         for pair in sent_vals:
             assert metrics[pair["name"]] == pair["value"]
@@ -366,6 +364,23 @@ class TestSDK(object):
             for log in expect_logs:
                 assert_in(log, data)
         os.remove(latest_log_file)
+        
+    def experiment_raises_exceptions(self):
+        exception_raised = True
+        expected_exception = "some_exception_b"
+
+        def test_job():
+            exp = Experiment("Exception experiment")
+            time.sleep(0.1)
+            raise Exception(expected_exception)
+            exp.end()
+        try:
+            test_job()
+            exception_raised = False
+        except Exception as e:
+            assert str(e) == expected_exception
+
+        assert exception_raised
 
     def test_iter(self):
         # Run a test job that includes the iterator function

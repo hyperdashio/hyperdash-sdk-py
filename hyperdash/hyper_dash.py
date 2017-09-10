@@ -303,10 +303,11 @@ class HyperDash:
         network_thread.start()
 
         #Create thread for running code if using CLI or decorator
-        if type(self.runner) is CodeRunner:
+        if self.runner.should_run_as_thread():
             code_thread = Thread(target=self.runner.run)
             code_thread.daemon = True
             code_thread.start()
+            
         # Event loop
         while True:
             try:
