@@ -302,7 +302,7 @@ class HyperDash:
         network_thread.daemon = True
         network_thread.start()
 
-        #Create thread for running code if using CLI or decorator
+        # Create thread for running code if using CLI or decorator
         if self.runner.should_run_as_thread():
             code_thread = Thread(target=self.runner.run)
             code_thread.daemon = True

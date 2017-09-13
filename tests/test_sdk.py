@@ -334,12 +334,8 @@ class TestSDK(object):
             {"is_internal": True, "name": "hd_iter_0", "value": 1},
             {"is_internal": False, "name": "accuracy", "value": 0.2},
        ]
-        # print(len(expect_metrics), len(metrics_messages))
-        print(expect_metrics)
-        print(metrics_messages)
         assert len(expect_metrics) == len(metrics_messages)
         for i, message in enumerate(metrics_messages):
-            # print(expect_metrics[i])
             assert message == expect_metrics[i]
         
         captured_out = faked_out.getvalue()

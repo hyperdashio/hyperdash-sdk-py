@@ -43,8 +43,7 @@ class ExperimentRunner:
             return None
         
     def should_run_as_thread(self):
-        with self.lock:
-            return False
+        return False
 
 class Experiment:
     """Experiment records hyperparameters and metrics. The recorded values
@@ -119,8 +118,8 @@ class Experiment:
             self._experiment_runner.exit_cleanly = True
             self._experiment_runner.done = True
             # Makes sure the experiment runner has cleaned up fully 
-            self.done_chan.get(block=True, timeout=None)
     
+        self.done_chan.get(block=True, timeout=None)
     """
     For selective logging while capture_io is disabled
     

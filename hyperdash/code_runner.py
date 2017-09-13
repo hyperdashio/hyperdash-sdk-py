@@ -60,7 +60,5 @@ class CodeRunner:
         with self.lock:
             return self.exception
 
-            
     def should_run_as_thread(self):
-        with self.lock:
-            return True
+        return True
