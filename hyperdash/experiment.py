@@ -101,7 +101,9 @@ class Experiment:
         def run():
             self._hd.run()
             self.done_chan.put(True)
-        threading.Thread(target=run).start()
+        exp_thread = threading.Thread(target=run)
+        exp_thread.daemon = True
+        exp_thread.start()
 
     def metric(self, name, value, log=True):
         return self._hd_client.metric(name, value, log)
