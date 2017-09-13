@@ -15,7 +15,7 @@ Alternatively if you're trying to test the CLI, or just want to use the CLI to t
 1) Install [setuptools](https://packaging.python.org/tutorials/installing-packages/)
 2) Install twine `pip install twine`
 3) Increment the version in setup.py
-4) Create a ~/.pypirc with the following content (spacing important!):
+4) Create ~/.pypirc with the following content (spacing important!):
 ```
 [distutils]
 index-servers =
@@ -23,8 +23,9 @@ index-servers =
 
 [pypi]
 username: hyperdash
-password: <1PASSHERE>
+password: <PASSWORD_HERE>
 ```
-4) Run `python setup.py sdist` to create a new tar file
-5) Run `twine upload -r pypi <PATH_TO_TAR_FILE>`
-6) Verify installation by running `pip install --no-cache-dir hyperdash`
+5) Run `rm -rf dist` to cleanup dist folder
+6) Run `python setup.py sdist` to create a new tar file
+7) Run `twine upload -r pypi <PATH_TO_TAR_FILE>` to upload to pypi
+8) Verify installation by running `pip install --upgrade --no-cache-dir hyperdash`
