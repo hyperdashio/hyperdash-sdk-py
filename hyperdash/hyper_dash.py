@@ -4,7 +4,6 @@ from threading import Thread
 
 import datetime
 import json
-import logging
 import os
 import sys
 import time
@@ -20,6 +19,7 @@ from .constants import MAX_LOG_SIZE_BYTES
 from .sdk_message import create_run_started_message
 from .sdk_message import create_run_ended_message
 from .sdk_message import create_log_message
+from .code_runner import CodeRunner
 
 # Python 2/3 compatibility
 __metaclass__ = type
@@ -33,7 +33,7 @@ class HyperDash:
     """HyperDash monitors a job and manages capturing IO / server comms.
 
     This class is designed to be run in its own thread and contains an instance
-    of code_runner (which is running the job) and server_manager (for talking
+    of runner (which is running the job) and server_manager (for talking
     to the server.)
     """
 
@@ -41,25 +41,25 @@ class HyperDash:
         self,
         job_name,
         current_sdk_run_uuid,
-        code_runner,
         server_manager,
         io_bufs,
         std_streams,
         parent_logger,
+        runner,
     ):
         """Initialize the HyperDash class.
 
         args:
             1) job_name: Name of the current running job
             2) current_sdk_run_uuid: UUID of current run
-            3) code_runner: Instance of CodeRunner
+            3) runner: Instance of CodeRunner or ExperimentRunner
             4) server_manager: ServerManager instance
             5) io_bufs: Tuple in the form of (StringIO(), StringIO(),)
             6) std_streams: Tuple in the form of (StdOut, StdErr)
         """
         self.job_name = job_name
         self.current_sdk_run_uuid = current_sdk_run_uuid
-        self.code_runner = code_runner
+        self.runner = runner
         self.server_manager = server_manager
         self.out_buf, self.err_buf = io_bufs
         self.std_out, self.std_err = std_streams
@@ -251,7 +251,7 @@ class HyperDash:
     def run(self):
         """
         run_http works using three separate threads:
-            1) code_runner thread which runs the user's code
+            1) runner thread which runs the user's code (if using CodeRunner)
             2) network_thread which does blocking I/O with the server
             3) event_loop thread which runs the SDK's main event loop (this is
                just the main thread)
@@ -296,22 +296,23 @@ class HyperDash:
                     self.server_manager.tick(self.current_sdk_run_uuid)
                     time.sleep(1)
 
-        code_thread = Thread(target=self.code_runner.run)
         network_thread = Thread(target=network_loop)
-
-        # Daemonize them so they don't impede shutdown if the user
+        # Daemonize so they don't impede shutdown if the user
         # keyboard interrupts
-        code_thread.daemon = True
         network_thread.daemon = True
-
         network_thread.start()
-        code_thread.start()
 
+        # Create thread for running code if using CLI or decorator
+        if self.runner.should_run_as_thread():
+            code_thread = Thread(target=self.runner.run)
+            code_thread.daemon = True
+            code_thread.start()
+            
         # Event loop
         while True:
             try:
                 self.capture_io()
-                exited_cleanly, is_done = self.code_runner.is_done()
+                exited_cleanly, is_done = self.runner.is_done()
                 if is_done:
                     self.programmatic_exit = True
                     if exited_cleanly:
@@ -319,13 +320,13 @@ class HyperDash:
                         # Block until network loop says its done
                         self.shutdown_main_channel.get(
                             block=True, timeout=None)
-                        return self.code_runner.get_return_val()
+                        return self.runner.get_return_val()
                     else:
                         self.cleanup("failure")
                         # Block until network loop says its done
                         self.shutdown_main_channel.get(
                             block=True, timeout=None)
-                        raise self.code_runner.get_exception()
+                        raise self.runner.get_exception()
 
                 time.sleep(1)
             # Handle Ctrl+C

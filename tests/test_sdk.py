@@ -14,6 +14,7 @@ from nose.tools import assert_in
 import requests
 
 from hyperdash import monitor
+from hyperdash import Experiment
 from mocks import init_mock_server
 from hyperdash.constants import get_hyperdash_logs_home_path_for_job
 from threading import Thread
@@ -235,6 +236,7 @@ class TestSDK(object):
         def test_job(hd_client):
             for key, val in six.iteritems(metrics):
                 hd_client.metric(key, val)
+            return
 
         test_job()
 
@@ -258,6 +260,7 @@ class TestSDK(object):
                 for param in params:
                     hd_client.param(param[0], param[1])
                     time.sleep(0.1)
+                return
             test_job()
 
         # Collect sent SDK messages that had a params payload
@@ -278,6 +281,102 @@ class TestSDK(object):
         for param in params:
             assert param[0] in fake_out.getvalue()
             assert str(param[1]) in fake_out.getvalue()
+
+    def test_experiment(self):
+        # Run a test job via the Experiment API
+        # Make sure log file is where is supposed to be
+        # look at decorator
+        # verify run start/stop is sent
+        with patch("sys.stdout", new=StringIO()) as faked_out:
+            exp = Experiment("MNIST")
+            exp.log("test print")
+            exp.param("batch size", 32)
+            for i in exp.iter(2):
+                exp.metric("accuracy", i*0.2)
+            time.sleep(0.1)
+            exp.end()
+        
+        # Test params match what is expected
+        params_messages = []
+        for msg in server_sdk_messages:
+            payload = msg["payload"]
+            if "params" in payload:
+                params_messages.append(payload)
+
+        expect_params = [
+            {
+                "params": {
+                    "batch size": 32,
+                },
+                "is_internal": False,
+            },
+            {
+                "params": {
+                    "hd_iter_0_epochs": 2,
+                },
+                "is_internal": True,
+            },
+        ]    
+        assert len(expect_params) == len(params_messages)
+        for i, message in enumerate(params_messages):
+            assert message == expect_params[i]
+
+        # Test metrics match what is expected
+        metrics_messages = []
+        for msg in server_sdk_messages:
+            payload = msg["payload"]
+            if "name" in payload:
+                metrics_messages.append(payload)
+
+        expect_metrics = [
+            {"is_internal": True, "name": "hd_iter_0", "value": 0},
+            {"is_internal": False, "name": "accuracy", "value": 0},
+            {"is_internal": True, "name": "hd_iter_0", "value": 1},
+            {"is_internal": False, "name": "accuracy", "value": 0.2},
+       ]
+        assert len(expect_metrics) == len(metrics_messages)
+        for i, message in enumerate(metrics_messages):
+            assert message == expect_metrics[i]
+        
+        captured_out = faked_out.getvalue()
+        assert "error" not in captured_out
+        
+        # Make sure logs were persisted
+        expect_logs = [
+            "{ batch size: 32 }",
+            "test print",
+            "| Iteration 0 of 1 |",
+            "| accuracy:   0.000000 |",
+        ]
+
+        log_dir = get_hyperdash_logs_home_path_for_job("MNIST")
+        latest_log_file = max([
+            os.path.join(log_dir, filename) for
+            filename in
+            os.listdir(log_dir)
+        ], key=os.path.getmtime)
+        with open(latest_log_file, "r") as log_file:
+            data = log_file.read()
+            for log in expect_logs:
+                assert_in(log, data)
+        os.remove(latest_log_file)
+        
+    def experiment_raises_exceptions(self):
+        exception_raised = True
+        expected_exception = "some_exception_b"
+
+        def test_job():
+            exp = Experiment("Exception experiment")
+            time.sleep(0.1)
+            raise Exception(expected_exception)
+            exp.end()
+        try:
+            test_job()
+            exception_raised = False
+        except Exception as e:
+            assert str(e) == expected_exception
+
+        assert exception_raised
 
     def test_iter(self):
         # Run a test job that includes the iterator function
@@ -349,6 +448,7 @@ class TestSDK(object):
             {"is_internal": True, "name": "hd_iter_1", "value": 2},
             {"is_internal": False, "name": "loss", "value": 2},
         ]
+        # print(len(expected_metrics), len(metric_messages))
         assert len(expected_metrics) == len(metric_messages)
         for i, message in enumerate(metric_messages):
             assert message == expected_metrics[i]

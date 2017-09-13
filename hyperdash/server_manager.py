@@ -2,7 +2,6 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import json
-import logging
 import os
 import sys
 import time
@@ -200,7 +199,7 @@ class ServerManagerHTTP(ServerManagerBase):
             self.last_message_sent_at = time.time()
 
     def cleanup(self, sdk_run_uuid):
-        # Try and flush any remaining messages
+        # Try to flush any remaining messages
         return self.tick(sdk_run_uuid)
 
     def __init__(self, custom_api_key_getter, parent_logger):

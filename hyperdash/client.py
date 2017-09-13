@@ -80,3 +80,6 @@ class HDClient:
                          i, log=False, is_internal=True)
             yield i
             i += 1
+
+    def end(self):
+        self.logger.warning("end() call is unneccessary while using decorator syntax.")
