@@ -308,6 +308,7 @@ class TestSDK(object):
             exp.log("test print")
             exp.param("batch size", 32)
             for i in exp.iter(2):
+                time.sleep(1)
                 exp.metric("accuracy", i*0.2)
             time.sleep(0.1)
             exp.end()
