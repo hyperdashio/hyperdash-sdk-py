@@ -11,17 +11,17 @@ from .sdk_message import create_param_message
 class HDClient:
     def __init__(self, logger, server_manager, sdk_run_uuid):
         self.logger = logger
-        self.server_manager = server_manager
-        self.sdk_run_uuid = sdk_run_uuid
+        self._server_manager = server_manager
+        self._sdk_run_uuid = sdk_run_uuid
         # Keeps track of which parameters have been seen before
         # so we can prevent duplicates
-        self.seen_params = set()
+        self._seen_params = set()
         # Keeps track of how many iterators have been created
         # so we can give them distinct names
-        self.iter_num = 0
+        self._iter_num = 0
         # Keep track of the last time we saw a metric so we can
         # limit how often the are emitted
-        self.last_seen_metrics = {}
+        self._last_seen_metrics = {}
 
     def metric(self, name, value, log=True):
         """Emit a datapoint for a named timeseries.
@@ -38,15 +38,15 @@ class HDClient:
         assert value is not None and name is not None and sample_frequency_per_second is not None, "value and name and sample_frequency_per_second must not be None."
 
         current_time = time.time()
-        last_seen_at = self.last_seen_metrics.get(name, None)
+        last_seen_at = self._last_seen_metrics.get(name, None)
         if last_seen_at and (current_time - last_seen_at < (1.0/float(sample_frequency_per_second))):
             # Not enough time has elapsed since the last time this metric was emitted
             return
 
         message = create_metric_message(
-            self.sdk_run_uuid, name, value, is_internal)
-        self.server_manager.put_buf(message)
-        self.last_seen_metrics[name] = current_time
+            self._sdk_run_uuid, name, value, is_internal)
+        self._server_manager.put_buf(message)
+        self._last_seen_metrics[name] = current_time
         if log:
             self.logger.info("| {0}: {1:10f} |".format(name, value))
 
@@ -62,13 +62,13 @@ class HDClient:
         assert isinstance(name, six.string_types), "name must be a string."
         # Make sure its JSON serializable
         json.dumps(val)
-        assert name not in self.seen_params, "hyperparameters should be unique and not reused"
+        assert name not in self._seen_params, "hyperparameters should be unique and not reused"
 
         params = {}
         params[name] = val
-        message = create_param_message(self.sdk_run_uuid, params, is_internal)
-        self.server_manager.put_buf(message)
-        self.seen_params.add(name)
+        message = create_param_message(self._sdk_run_uuid, params, is_internal)
+        self._server_manager.put_buf(message)
+        self._seen_params.add(name)
         if log:
             self.logger.info("{{ {}: {} }}".format(name, val))
         return val
@@ -82,9 +82,9 @@ class HDClient:
         """
         i = 0
         # Capture the existing iterator number
-        iter_num = self.iter_num
+        iter_num = self._iter_num
         # Increment the iterator number for subsequent calls
-        self.iter_num += 1
+        self._iter_num += 1
         self._param("hd_iter_{}_epochs".format(iter_num),
                     n, log=False, is_internal=True)
         while i < n:
