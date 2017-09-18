@@ -1,8 +1,11 @@
-from .sdk_message import create_metric_message
-from .sdk_message import create_param_message
+import time
+
 import numbers
 import six
 import json
+
+from .sdk_message import create_metric_message
+from .sdk_message import create_param_message
 
 
 class HDClient:
@@ -16,6 +19,9 @@ class HDClient:
         # Keeps track of how many iterators have been created
         # so we can give them distinct names
         self.iter_num = 0
+        # Keep track of the last time we saw a metric so we can
+        # limit how often the are emitted
+        self.last_seen_metrics = {}
 
     def metric(self, name, value, log=True):
         """Emit a datapoint for a named timeseries.
@@ -25,14 +31,22 @@ class HDClient:
         """
         return self._metric(name, value, log, False)
 
-    def _metric(self, name, value, log=True, is_internal=False):
+    def _metric(self, name, value, log=True, is_internal=False, sample_frequency_per_second=1):
         assert isinstance(value, numbers.Real), "value must be a real number."
         assert isinstance(name, six.string_types)
-        assert value is not None and name is not None, "value and name must not be None."
+        assert isinstance(sample_frequency_per_second, numbers.Real), "sample_frequency_per_second must be a real number."
+        assert value is not None and name is not None and sample_frequency_per_second is not None, "value and name and sample_frequency_per_second must not be None."
+
+        current_time = time.time()
+        last_seen_at = self.last_seen_metrics.get(name, None)
+        if last_seen_at and (current_time - last_seen_at < (1.0/float(sample_frequency_per_second))):
+            # Not enough time has elapsed since the last time this metric was emitted
+            return
 
         message = create_metric_message(
             self.sdk_run_uuid, name, value, is_internal)
         self.server_manager.put_buf(message)
+        self.last_seen_metrics[name] = current_time
         if log:
             self.logger.info("| {0}: {1:10f} |".format(name, value))
 
