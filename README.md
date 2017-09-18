@@ -1,6 +1,83 @@
 # Hyperdash Python SDK
 
-The Hyperdash Python SDK is the official SDK for [Hyperdash.io](https://hyperdash.io). Once installed, the SDK automatically monitors your machine learning jobs.
+Hyperdash is a machine learning monitoring library, written in Python and capable of running alongside Tensorflow, Scikit-Learn, and other modelling libraries. It was developed with a focus on enabling fast knowledge gain.
+
+Use Hyperdash if you need model monitoring that:
+
+* Tracks your hyperparmeters across different model experiments.
+* Graphs performance metrics (loss, reward, etc.) in real-time.
+* Can be viewed remotely via both a web and mobile app.
+* Notifies you when your experiment job has finished.
+
+Hyperdash is compatible with: **Python 2.7-3.6**
+
+[Visualization gif here]
+
+
+## Installation
+
+```
+$ pip install --upgrade pip && pip install hyperdash
+```
+Installing within a python virtual environment such as [**virtualenv**](https://github.com/pypa/virtualenv) or [**conda**](https://github.com/conda/conda) is recommended.
+```
+# Login if you have an account
+$ hyperdash login
+
+# Or signup free with an email
+$ hyperdash signup
+```
+After `login` or `signup`, an API key is saved to your local machine for automatic authorization. If you'd rather manage your API key manually, then review the "API Key Storage" section below.
+
+You're ready to use Hyperdash!
+
+## Getting started: 30 seconds
+The core object of Hyperdash is the **Experiment**. The simplest experiment logs a single print statement.
+```
+from hyperdash import Experiment
+
+# Create and start an experiment with a model name
+exp = Experiment("Print Example")
+
+print("View me on web or mobile")
+
+# cleanup
+exp.end()
+```
+This outputs something like:
+```
+View me on web or mobile
+Logs for this run of Print Example are available locally at: /Users/username/.hyperdash/logs/print-example/print-example_2017-09-16t23-00-25-833357.log
+```
+
+Scikit-Learn example:
+```
+from sklearn import datasets
+from sklearn import svm
+from sklearn.metrics import accuracy_score
+from hyperdash import Experiment
+
+exp = Experiment("Digits classifier")
+
+# Record the value of gamma for this experiment
+gamma = exp.param("gamma",0.001)
+
+clf = svm.SVC(gamma=gamma)
+digits = datasets.load_digits()
+
+test_cases = exp.param("Test cases", 50)
+X_train, y_train = digits.data[:-test_cases], digits.target[:-test_cases]
+X_test, y_test = digits.data[-test_cases:], digits.target[-test_cases:]
+
+exp.param("Training cases", len(X_train))
+
+clf.fit(X_train, y_train)
+
+exp.metric("accuracy", accuracy_score(X_test, y_test))
+
+exp.end()
+```
+
 
 ## Installation
 
