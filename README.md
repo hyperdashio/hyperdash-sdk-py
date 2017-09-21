@@ -1,26 +1,30 @@
 # Hyperdash Python SDK
 
-Hyperdash is a machine learning monitoring library, written in Python and capable of running alongside Tensorflow, Scikit-Learn, and other modelling libraries. It was developed with a focus on enabling fast knowledge gain.
+Hyperdash is a machine learning monitoring library, written in Python and capable of running alongside Tensorflow, Scikit-Learn, and other modelling libraries. Hyperdash provides visualizations similar to Tensorboard. It was developed with a focus on enabling fast knowledge gain.
 
 Use Hyperdash if you need model monitoring that:
 
+* Is fast and easy to setup and use.
 * Tracks your hyperparmeters across different model experiments.
 * Graphs performance metrics (loss, reward, etc.) in real-time.
+* Saves a log file of your experiment job output.
+* Notifies you when a long-running experiment job has finished.
 * Can be viewed remotely via both a web and mobile app.
-* Notifies you when your experiment job has finished.
 
 Hyperdash is compatible with: **Python 2.7-3.6**
 
 [Visualization gif here]
 
 
-## Installation
+## Command Line Installation
+*Foreword: We care deeply about making Hyperdash fast and easy to install  on Linux, Mac, and Windows. If you find a snag along the way, please let us know at support@hyperdash.io!*
 
-```
+Install Hyperdash from [pip](https://packaging.python.org/tutorials/installing-packages/#requirements-for-installing-packages):
+```bash
 $ pip install --upgrade pip && pip install hyperdash
 ```
-Installing within a python virtual environment such as [**virtualenv**](https://github.com/pypa/virtualenv) or [**conda**](https://github.com/conda/conda) is recommended.
-```
+Installing within a python virtual environment such as [virtualenv](https://github.com/pypa/virtualenv) or [conda](https://github.com/conda/conda) is recommended.
+```bash
 # Login if you have an account
 $ hyperdash login
 
@@ -29,14 +33,18 @@ $ hyperdash signup
 ```
 After `login` or `signup`, an API key is saved to your local machine for automatic authorization. If you'd rather manage your API key manually, then review the "API Key Storage" section below.
 
-You're ready to use Hyperdash!
-
-## Getting started: 30 seconds
-The core object of Hyperdash is the **Experiment**. The simplest experiment logs a single print statement.
+You're ready to use Hyperdash! Make sure Hyperdash works by running:
 ```
+$ hyperdash demo
+```
+
+## Learn Hyperdash in 30 seconds
+The core object of Hyperdash is the **Experiment**. The simplest experiment logs a single print statement.
+```python
+# simple.py
 from hyperdash import Experiment
 
-# Create and start an experiment with a model name
+# Create an experiment with a model name and autostart
 exp = Experiment("Print Example")
 
 print("View me on web or mobile")
@@ -44,50 +52,53 @@ print("View me on web or mobile")
 # cleanup
 exp.end()
 ```
-This outputs something like:
+Running `simple.py` causes a log of all the console output between experiment creation and end to be logged to local disk. For example:
 ```
 View me on web or mobile
 Logs for this run of Print Example are available locally at: /Users/username/.hyperdash/logs/print-example/print-example_2017-09-16t23-00-25-833357.log
 ```
-
-Scikit-Learn example:
-```
-from sklearn import datasets
-from sklearn import svm
-from sklearn.metrics import accuracy_score
+### Instrumentation example
+Hyperdash helps you track **hyperparameters** and **performance metrics** for your experiments. Here is example instrumentation using Scikit-Learn:
+```python
+# digits.py
+from sklearn import svm, datasets
 from hyperdash import Experiment
 
-exp = Experiment("Digits classifier")
+exp = Experiment("Digits Classifier")
 
-# Record the value of gamma for this experiment
-gamma = exp.param("gamma",0.001)
-
-clf = svm.SVC(gamma=gamma)
+# Preprocess data
 digits = datasets.load_digits()
-
-test_cases = exp.param("Test cases", 50)
+test_cases = 50
 X_train, y_train = digits.data[:-test_cases], digits.target[:-test_cases]
 X_test, y_test = digits.data[-test_cases:], digits.target[-test_cases:]
 
-exp.param("Training cases", len(X_train))
+# Record the value of hyperparameter gamma for this experiment
+gamma = exp.param("gamma", 0.1)
+# Param can take any basic type (Number, Boolean, String)
 
-clf.fit(X_train, y_train)
+classifer = svm.SVC(gamma=gamma)
+classifer.fit(X_train, y_train)
 
-exp.metric("accuracy", accuracy_score(X_test, y_test))
+# Record a numerical performance metric
+exp.metric("accuracy", classifer.score(X_test, y_test))
 
 exp.end()
 ```
+Hyperparameters and metrics are pretty printed:
+```
+{ gamma     : 0.001  }
+| accuracy  : 1.000  |
+Logs for this run of Digits Classifier are available locally at: /Users/username/.hyperdash/logs/digits-classifier/digits-classifier_2017-09-20t18-50-55-258215.log
+```
+**Done!**
+
+Now you can visualize your experiments in the Hyperdash [__web__](https://hyperdash.io/), [__iOS__](https://itunes.apple.com/us/app/hyperdash-machine-learning-monitoring/id1257582233), and [__Android__](https://play.google.com/store/apps/details?id=com.hyperdash) apps.
+
+[GIF]
+
+### API Details
 
 
-## Installation
-
-`pip install --upgrade pip && pip install hyperdash`
-
-## Usage
-
-The Hyperdash SDK requires a valid API key in order to function. Luckily, the `hyperdash login` (if you already have an account) and `hyperdash signup` (if you don't) commands will automatically install one for you.
-
-If you'd rather manage your API key manually, then review the "API Key Storage" section below.
 
 ### Standalone Script
 The easiest way to use the Hyperdash SDK is to simply prefix any terminal command with `hyperdash run`:
@@ -160,7 +171,7 @@ You can alternatively override this API key with a hyperdash.json file in your l
 
 Finally, the monitor function accepts an api_key_getter argument that if passed in will be called everytime we need to retrieve your API key. Example:
 
-```
+```python
 # test_script.py
 
 from hyperdash.sdk import monitor
