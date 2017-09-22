@@ -1,6 +1,6 @@
 # Hyperdash Python SDK
 
-Hyperdash is a machine learning monitoring library, written in Python and capable of running alongside Tensorflow, Scikit-Learn, and other modelling libraries. Hyperdash provides visualizations similar to Tensorboard. It was developed with a focus on enabling fast knowledge gain.
+[Hyperdash](https://hyperdash.io) is a machine learning monitoring library, written in Python and capable of running alongside Tensorflow, Scikit-Learn, and other modelling libraries. Hyperdash provides visualizations similar to Tensorboard. It was developed with a focus on enabling fast knowledge gain.
 
 Use Hyperdash if you need model monitoring that:
 
@@ -12,9 +12,6 @@ Use Hyperdash if you need model monitoring that:
 * Can be viewed remotely via both a web and mobile app.
 
 Hyperdash is compatible with: **Python 2.7-3.6**
-
-[Visualization gif here]
-
 
 ## Command Line Installation
 *Foreword: We care deeply about making Hyperdash fast and easy to install  on Linux, Mac, and Windows. If you find a snag along the way, please let us know at support@hyperdash.io!*
@@ -92,60 +89,31 @@ Logs for this run of Digits Classifier are available locally at: /Users/username
 ```
 **Done!**
 
-Now you can visualize your experiments in the Hyperdash [__web__](https://hyperdash.io/), [__iOS__](https://itunes.apple.com/us/app/hyperdash-machine-learning-monitoring/id1257582233), and [__Android__](https://play.google.com/store/apps/details?id=com.hyperdash) apps.
+Now you can visualize your experiments in the Hyperdash [__web__](https://hyperdash.io/dashboard), [__iOS__](https://itunes.apple.com/us/app/hyperdash-machine-learning-monitoring/id1257582233), and [__Android__](https://play.google.com/store/apps/details?id=com.hyperdash) apps.
 
-[GIF]
+### IPython/Jupyter Notebook
 
-### Jupyter Notebook ###
+Hyperdash works in IPython/Jupyter notebooks, across cells.  
+
+<img width="700" alt="Hyperdash in Jupyter" src="https://user-images.githubusercontent.com/1892071/30736813-1a7fcb7e-9f39-11e7-812b-f1b77ee33dab.png">
+ 
+Note: by default all print statements will be redirected to the cell that creates the experiment object due to capturing Jupyter's stdio. Use `exp = Experiment("model name", capture_io=False)` for normal printing, but no logging.
+
+It's also important to `end()` your experiment. Please do so to avoid bugs.
 
 
 ### Decorating a Python function
 Import the monitor function, and apply it as a decorator to a function that runs your machine learning job. The only argument you need to pass to the monitor function is the name of the model that you're training.
 
 ```
-# test_script.py
-
 from hyperdash.sdk import monitor
 
 @monitor("dogs vs. cats")
-def train_dogs_vs_cats():
-  print("Epoch 1, accuracy: 50%")
-  time.sleep(2)
-  print("Epoch 2, accuracy: 75%")
-  time.sleep(2)
-  print("Epoch 3, accuracy: 100%")
+def train_dogs_vs_cats(hd_client): # Get hd_client Experiment object as argument to function.
+  hd_client.param("learning rate", 0.005)
+  model.fit()
+  hd_client.metric(model.accuracy())
 ```
-
-Once you've imported our library, run your program as you normally would:
-
-`python test_script.py`
-
-That's it! Open the Hyperdash mobile app and you should see your logs start to stream in!
-
-### IPython/Jupyter Notebook
-
-Hyperdash works in IPython/Jupyter notebooks as well. In fact, you can use the exact same code from the previous section in a Jupyter notebook and it will work just fine.
-
-However, if you'd rather have Hyperdash monitor the execution of a specific Jupyter cell, as opposed to a decorated function, you can use our custom IPython magic. Example:
-
-```
-Cell 1
- ___________________________________________________________
-|  from hyperdash import monitor_cell                       |
-|___________________________________________________________|
-
-Cell 2
- ___________________________________________________________
-|  %%monitor_cell dogs vs. cats                            |
-|  print("Epoch 1, accuracy: 50%")                          |
-|  time.sleep(2)                                            |
-|  print("Epoch 2, accuracy: 75%")                          |
-|  time.sleep(2)                                            |
-|  print("Epoch 3, accuracy: 100%")                         |
-|__________________________________________________________ |
-```
-
-Note that importing the cell magic and invoking it must occur in two different cells.
 
 ### Pure Logging
 If you do not need instrumentation, you can use Hyperdash even easier. Simply prefix any terminal command with `hyperdash run`:
