@@ -12,7 +12,10 @@ setup(
         'python-slugify',
     ],
     entry_points={
-        'console_scripts': ['hyperdash = hyperdash_cli.cli:main']
+        'console_scripts': [
+            'hyperdash = hyperdash_cli.cli:main',
+            'hd = hyperdash_cli.cli:main',
+                            ]
     },
     version=version,
     description='Hyperdash.io CLI and SDK',
