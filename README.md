@@ -52,13 +52,13 @@ print("View me on web or mobile")
 # cleanup
 exp.end()
 ```
-Running `simple.py` causes a log of all the console output between experiment creation and end to be logged to local disk. For example:
+Running `python simple.py` causes a log of all the console output between experiment creation and end to be logged to local disk. For example:
 ```
 View me on web or mobile
 Logs for this run of Print Example are available locally at: /Users/username/.hyperdash/logs/print-example/print-example_2017-09-16t23-00-25-833357.log
 ```
 ### Instrumentation example
-Hyperdash helps you track **hyperparameters** and **performance metrics** for your experiments. Here is example instrumentation using Scikit-Learn:
+Hyperdash helps you track **hyperparameters** and **performance metrics** for your experiments.
 ```python
 # digits.py
 from sklearn import svm, datasets
@@ -74,7 +74,7 @@ X_test, y_test = digits.data[-test_cases:], digits.target[-test_cases:]
 
 # Record the value of hyperparameter gamma for this experiment
 gamma = exp.param("gamma", 0.1)
-# Param can take any basic type (Number, Boolean, String)
+# Param can record any basic type (Number, Boolean, String)
 
 classifer = svm.SVC(gamma=gamma)
 classifer.fit(X_train, y_train)
@@ -84,7 +84,7 @@ exp.metric("accuracy", classifer.score(X_test, y_test))
 
 exp.end()
 ```
-Hyperparameters and metrics are pretty printed:
+Hyperparameters and metrics are pretty printed for your logs and reference:
 ```
 { gamma     : 0.001  }
 | accuracy  : 1.000  |
@@ -96,24 +96,8 @@ Now you can visualize your experiments in the Hyperdash [__web__](https://hyperd
 
 [GIF]
 
-### API Details
+### Jupyter Notebook ###
 
-
-
-### Standalone Script
-The easiest way to use the Hyperdash SDK is to simply prefix any terminal command with `hyperdash run`:
-
-```
-hyperdash run -n "My test python script" python my_test_script.py
-```
-
-or
-
-```
-hyperdash run -n "My test bash script" ./my_test_bash_script.sh
-```
-
-It doesn't matter what language your script is written in, if it can be executed from the command line then you can wrap it with the `run`  command
 
 ### Decorating a Python function
 Import the monitor function, and apply it as a decorator to a function that runs your machine learning job. The only argument you need to pass to the monitor function is the name of the model that you're training.
@@ -162,6 +146,21 @@ Cell 2
 ```
 
 Note that importing the cell magic and invoking it must occur in two different cells.
+
+### Pure Logging
+If you do not need instrumentation, you can use Hyperdash even easier. Simply prefix any terminal command with `hyperdash run`:
+
+```
+hyperdash run -n "My test python script" python my_test_script.py
+```
+
+or
+
+```
+hyperdash run -n "My test bash script" ./my_test_bash_script.sh
+```
+
+It doesn't matter what language your script is written in, if it can be executed from the command line then you can wrap it with the `run`  command
 
 ### API key storage
 
