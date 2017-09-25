@@ -17,6 +17,7 @@ from six import PY2
 from hyperdash.constants import API_NAME_CLI_RUN
 from hyperdash.constants import get_hyperdash_json_home_path
 from hyperdash.constants import get_hyperdash_json_paths
+from hyperdash.constants import get_hyperdash_version
 from hyperdash.monitor import _monitor
 
 from .constants import get_base_url
@@ -282,6 +283,10 @@ def run(args):
     wrapped()
 
 
+def version(args=None):
+    print("hyperdash {}".format(get_hyperdash_version()))
+
+
 def get_input(prompt, sensitive=False):
     if sensitive:
         return getpass(prompt)
@@ -404,6 +409,9 @@ def main():
     run_parser.add_argument('--name', '-name', '--n', '-n', required=True)
     run_parser.add_argument('args', nargs=argparse.REMAINDER)
     run_parser.set_defaults(func=run)
+
+    keys_parser = subparsers.add_parser('version')
+    keys_parser.set_defaults(func=version)
 
     args = parser.parse_args()
     args.func(args)

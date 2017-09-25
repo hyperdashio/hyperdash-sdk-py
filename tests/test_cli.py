@@ -213,3 +213,13 @@ class TestCLI(object):
             for expected in expected_output:
                 assert_in(expected, data)
         os.remove(latest_log_file)
+
+    def test_version(self):
+        with patch('sys.stdout', new=StringIO()) as fake_out:
+            hyperdash_cli.version()
+
+        expected_output = [
+            "hyperdash {}".format(get_hyperdash_version())
+        ]
+        for expected in expected_output:
+            assert_in(expected, fake_out.getvalue())
