@@ -5,11 +5,11 @@
 Use Hyperdash if you need model monitoring that:
 
 * Is fast and easy to setup and use.
-* Tracks your hyperparmeters across different model experiments.
+* Tracks your hyperparameters across different model experiments.
 * Graphs performance metrics (loss, reward, etc.) in real-time.
-* Saves a log file of your experiment job output.
-* Notifies you when a long-running experiment job has finished.
-* Can be viewed remotely via both a web and mobile app.
+* Saves your experiment's output (standard out / error) as a local log file
+* Notifies you when a long-running experiment has finished.
+* Can be viewed remotely on mobile and web.
 
 Hyperdash is compatible with: **Python 2.7-3.6**
 
@@ -35,13 +35,14 @@ You're ready to use Hyperdash! Make sure Hyperdash works by running:
 $ hyperdash demo
 ```
 
-## Learn Hyperdash in 30 seconds
+# Learn Hyperdash in 30 seconds
+### Basics
 The core object of Hyperdash is the **Experiment**. The simplest experiment logs a single print statement.
 ```python
 # simple.py
 from hyperdash import Experiment
 
-# Create an experiment with a model name and autostart
+# Create an experiment with a model name, then autostart
 exp = Experiment("Print Example")
 
 print("View me on web or mobile")
@@ -54,7 +55,7 @@ Running `python simple.py` causes a log of all the console output between experi
 View me on web or mobile
 Logs for this run of Print Example are available locally at: /Users/username/.hyperdash/logs/print-example/print-example_2017-09-16t23-00-25-833357.log
 ```
-### Instrumentation example
+### Instrumentation
 Hyperdash helps you track **hyperparameters** and **performance metrics** for your experiments.
 ```python
 # digits.py
@@ -87,11 +88,10 @@ Hyperparameters and metrics are pretty printed for your logs and reference:
 | accuracy  : 1.000  |
 Logs for this run of Digits Classifier are available locally at: /Users/username/.hyperdash/logs/digits-classifier/digits-classifier_2017-09-20t18-50-55-258215.log
 ```
-**Done!**
+### You've learned Hyperdash!
+Visualize your experiments in the Hyperdash [__web__](https://hyperdash.io/dashboard), [__iOS__](https://itunes.apple.com/us/app/hyperdash-machine-learning-monitoring/id1257582233), and [__Android__](https://play.google.com/store/apps/details?id=com.hyperdash) apps.
 
-Now you can visualize your experiments in the Hyperdash [__web__](https://hyperdash.io/dashboard), [__iOS__](https://itunes.apple.com/us/app/hyperdash-machine-learning-monitoring/id1257582233), and [__Android__](https://play.google.com/store/apps/details?id=com.hyperdash) apps.
-
-### IPython/Jupyter Notebook
+# IPython/Jupyter Notebook
 
 Hyperdash works in IPython/Jupyter notebooks, across cells.  
 
