@@ -99,6 +99,7 @@ def demo(args=None):
 
         exp.end()
     """)
+    from hyperdash import Experiment
 
     exp = Experiment("Dogs vs. Cats")
     n_estimators = exp.param("n_estimators", 500)

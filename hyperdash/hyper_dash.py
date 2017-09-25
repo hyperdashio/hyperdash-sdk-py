@@ -136,8 +136,8 @@ class HyperDash:
 
         # Create new log file for run
         try:
-            iso = slugify(datetime.datetime.now().isoformat())
-            logfile_name = "{}_{}.log".format(slugify(self.job_name), iso)
+            iso = slugify(unicode(datetime.datetime.now().isoformat()))
+            logfile_name = "{}_{}.log".format(slugify(unicode(self.job_name)), iso)
             logfile_path = os.path.join(job_log_folder, logfile_name)
             return open(logfile_path, "a"), logfile_path
         except IOError:

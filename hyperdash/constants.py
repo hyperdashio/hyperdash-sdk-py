@@ -45,7 +45,7 @@ def get_hyperdash_logs_home_path():
 
 
 def get_hyperdash_logs_home_path_for_job(job):
-    return os.path.join(get_hyperdash_logs_home_path(), slugify(job))
+    return os.path.join(get_hyperdash_logs_home_path(), slugify(unicode(job)))
 
 
 def get_hyperdash_local_path():
