@@ -55,7 +55,10 @@ class TestSDK(object):
 
             # Store messages / headers so we can assert on them later
             server_sdk_messages.append(message)
-            server_sdk_headers.append(response.headers)
+            if PY2:
+                server_sdk_headers.append(response.headers.dict)
+            else:
+                server_sdk_headers.append(response.headers)
 
             # Add response status code.
             response.send_response(requests.codes.ok)
@@ -126,8 +129,8 @@ class TestSDK(object):
         os.remove(latest_log_file)
 
         # Make sure correct API name / version headers are sent
-        assert server_sdk_headers[0].dict[API_KEY_NAME] == API_NAME_MONITOR
-        assert server_sdk_headers[0].dict[VERSION_KEY_NAME] == get_hyperdash_version()
+        assert server_sdk_headers[0][API_KEY_NAME] == API_NAME_MONITOR
+        assert server_sdk_headers[0][VERSION_KEY_NAME] == get_hyperdash_version()
 
     def test_monitor_raises_exceptions(self):
         exception_raised = True
@@ -375,8 +378,8 @@ class TestSDK(object):
         assert "error" not in captured_out
 
         # Make sure correct API name / version headers are sent
-        assert server_sdk_headers[0].dict[API_KEY_NAME] == API_NAME_EXPERIMENT
-        assert server_sdk_headers[0].dict[VERSION_KEY_NAME] == get_hyperdash_version()
+        assert server_sdk_headers[0][API_KEY_NAME] == API_NAME_EXPERIMENT
+        assert server_sdk_headers[0][VERSION_KEY_NAME] == get_hyperdash_version()
         
         # Make sure logs were persisted
         expect_logs = [

@@ -90,7 +90,10 @@ class TestCLI(object):
 
         def sdk_message(response):
             # Store headers so we can assert on them later
-            server_sdk_headers.append(response.headers)
+            if PY2:
+                server_sdk_headers.append(response.headers.dict)
+            else:
+                server_sdk_headers.append(response.headers)
 
             # Add response status code.
             response.send_response(requests.codes.ok)
@@ -195,8 +198,8 @@ class TestCLI(object):
             assert_in(expected, fake_out.getvalue())
 
         # Make sure correct API name / version headers are sent
-        assert server_sdk_headers[0].dict[API_KEY_NAME] == API_NAME_CLI_RUN
-        assert server_sdk_headers[0].dict[VERSION_KEY_NAME] == get_hyperdash_version()
+        assert server_sdk_headers[0][API_KEY_NAME] == API_NAME_CLI_RUN
+        assert server_sdk_headers[0][VERSION_KEY_NAME] == get_hyperdash_version()
 
         # Make sure logs were persisted
         log_dir = get_hyperdash_logs_home_path_for_job(job_name)
