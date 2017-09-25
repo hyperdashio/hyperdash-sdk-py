@@ -1,6 +1,6 @@
 # Hyperdash Python SDK
 
-[Hyperdash](https://hyperdash.io) is a machine learning monitoring library capable of running alongside Tensorflow, Scikit-Learn, and other modelling libraries. It was developed with a focus on enabling fast knowledge gain.
+[Hyperdash](https://hyperdash.io) is a machine learning monitoring library capable of running alongside Tensorflow, Scikit-Learn, and other modeling libraries. It was developed with a focus on enabling fast knowledge gain.
 
 Use Hyperdash if you're looking for cloud-based model monitoring that:
 
@@ -23,16 +23,16 @@ $ pip install --upgrade pip && pip install hyperdash
 Installing within a python virtual environment such as [virtualenv](https://github.com/pypa/virtualenv) is recommended. If you are having trouble installing via pip, a virtual environment will usually fix the problem.
 ```bash
 # Login if you have an account
-$ hyperdash login
+$ hd login
 
 # Or signup free with an email
-$ hyperdash signup
+$ hd signup
 ```
 After `login` or `signup`, an API key is saved to your local machine for automatic authorization. If you'd rather manage your API key manually, then review the "API Key Storage" section below.
 
 You're ready to use Hyperdash! Make sure Hyperdash works by running:
 ```
-$ hyperdash demo
+$ hd demo
 ```
 
 # Learn Hyperdash in 60 seconds
