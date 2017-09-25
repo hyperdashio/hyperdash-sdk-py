@@ -1,26 +1,28 @@
 # Hyperdash Python SDK
 
+
+
 [Hyperdash](https://hyperdash.io) is a machine learning monitoring library, written in Python and capable of running alongside Tensorflow, Scikit-Learn, and other modelling libraries. Hyperdash provides visualizations similar to Tensorboard. It was developed with a focus on enabling fast knowledge gain.
 
 Use Hyperdash if you need model monitoring that:
 
-* Is fast and easy to setup and use.
+* Is fast and easy-to-use in scripts and Jupyter.
 * Tracks your hyperparameters across different model experiments.
 * Graphs performance metrics (loss, reward, etc.) in real-time.
-* Saves your experiment's output (standard out / error) as a local log file
+* Saves your experiment's output (standard out / error) as a local log file.
 * Notifies you when a long-running experiment has finished.
-* Can be viewed remotely on mobile and web.
+* Can be viewed remotely on [__web__](https://hyperdash.io/dashboard), [__iOS__](https://itunes.apple.com/us/app/hyperdash-machine-learning-monitoring/id1257582233), and/or [__Android__](https://play.google.com/store/apps/details?id=com.hyperdash).
 
 Hyperdash is compatible with: **Python 2.7-3.6**
 
-## Command Line Installation
+## Installation
 *Foreword: We care deeply about making Hyperdash fast and easy to install  on Linux, Mac, and Windows. If you find a snag along the way, please let us know at support@hyperdash.io!*
 
-Install Hyperdash from [pip](https://packaging.python.org/tutorials/installing-packages/#requirements-for-installing-packages):
+Install Hyperdash in terminal from [pip](https://packaging.python.org/tutorials/installing-packages/#requirements-for-installing-packages):
 ```bash
 $ pip install --upgrade pip && pip install hyperdash
 ```
-Installing within a python virtual environment such as [virtualenv](https://github.com/pypa/virtualenv) or [conda](https://github.com/conda/conda) is recommended.
+Installing within a python virtual environment such as [virtualenv](https://github.com/pypa/virtualenv) is recommended. If you are having trouble installing via pip, a virtual environment will usually fix the problem.
 ```bash
 # Login if you have an account
 $ hyperdash login
@@ -35,28 +37,19 @@ You're ready to use Hyperdash! Make sure Hyperdash works by running:
 $ hyperdash demo
 ```
 
-# Learn Hyperdash in 30 seconds
-### Basics
-The core object of Hyperdash is the **Experiment**. The simplest experiment logs a single print statement.
-```python
-# simple.py
-from hyperdash import Experiment
-
-# Create an experiment with a model name, then autostart
-exp = Experiment("Print Example")
-
-print("View me on web or mobile")
-
-# cleanup
-exp.end()
+# Learn Hyperdash in 60 seconds
+### Pure logging 
+If all you need is logging and notifications, simply prefix any terminal command:
+```bash
+hd run -n "Hotdog CNN" python hotdog.py
 ```
-Running `python simple.py` causes a log of all the console output between experiment creation and end to be logged to local disk. For example:
+Or use pipe:
+```bash
+./catsdogs | hd pipe
 ```
-View me on web or mobile
-Logs for this run of Print Example are available locally at: /Users/username/.hyperdash/logs/print-example/print-example_2017-09-16t23-00-25-833357.log
-```
-### Instrumentation
-Hyperdash helps you track **hyperparameters** and **performance metrics** for your experiments.
+
+### Experiment instrumentation
+If you are interested in tracking **hyperparameters** and **performance metrics**, you'll want to use the **Experiment** api. Experiment objects are created with a model name, then auto-started and auto-incremented. The experiment object lets you track **hyperparameters** and **performance metrics**, while also recording standard out logs.
 ```python
 # digits.py
 from sklearn import svm, datasets
@@ -68,7 +61,8 @@ test_cases = 50
 X_train, y_train = digits.data[:-test_cases], digits.target[:-test_cases]
 X_test, y_test = digits.data[-test_cases:], digits.target[-test_cases:]
 
-exp = Experiment("Digits Classifier")
+# Create an experiment with a model name and stdout logging enabled, then autostart
+exp = Experiment("Digits Classifier", capture_io=True)
 
 # Record the value of hyperparameter gamma for this experiment
 gamma = exp.param("gamma", 0.1)
@@ -80,27 +74,32 @@ classifer.fit(X_train, y_train)
 # Record a numerical performance metric
 exp.metric("accuracy", classifer.score(X_test, y_test))
 
+# Cleanup and mark that the experiment successfully completed
 exp.end()
 ```
 Hyperparameters and metrics are pretty printed for your logs and reference:
 ```
-{ gamma     : 0.001  }
-| accuracy  : 1.000  |
-Logs for this run of Digits Classifier are available locally at: /Users/username/.hyperdash/logs/digits-classifier/digits-classifier_2017-09-20t18-50-55-258215.log
+{ gamma     : 0.001 }
+| accuracy  : 1.000 |
+Experiment "digits-classifier_2017-09-20t18-50-55-258215" complete.
+Logs are available locally at: /Users/username/.hyperdash/logs/digits-classifier/digits-classifier_2017-09-20t18-50-55-258215.log
 ```
 ### You've learned Hyperdash!
 Visualize your experiments in the Hyperdash [__web__](https://hyperdash.io/dashboard), [__iOS__](https://itunes.apple.com/us/app/hyperdash-machine-learning-monitoring/id1257582233), and [__Android__](https://play.google.com/store/apps/details?id=com.hyperdash) apps.
 
-# IPython/Jupyter Notebook
+# More information (Optional)
+- Jupyter/IPython tips
+- Decorator API
+- API key management
+- Watching a log file
 
-Hyperdash works in IPython/Jupyter notebooks, across cells.  
+### IPython/Jupyter Notebook
 
 <img width="700" alt="Hyperdash in Jupyter" src="https://user-images.githubusercontent.com/1892071/30736813-1a7fcb7e-9f39-11e7-812b-f1b77ee33dab.png">
  
 Note: by default all print statements will be redirected to the cell that creates the experiment object due to capturing Jupyter's stdio. Use `exp = Experiment("model name", capture_io=False)` for normal printing, but no logging.
 
-It's also important to `end()` your experiment. Please do so to avoid bugs.
-
+The SDK currently doesn't support mid-experiment parameter redeclaration. Remember to `end()` your experiment before redeclaring `exp`.
 
 ### Decorating a Python function
 Import the monitor function, and apply it as a decorator to a function that runs your machine learning job. The only argument you need to pass to the monitor function is the name of the model that you're training.
