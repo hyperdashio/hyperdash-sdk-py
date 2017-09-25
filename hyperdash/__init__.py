@@ -1,6 +1,4 @@
 from .monitor import monitor
-# Exported for use by the CLI code, not meant for direct use by users
-from .monitor import _monitor
 from .jupyter import IPythonMagicsWrapper as IPythonMagicsWrapper
 from .experiment import Experiment
 
