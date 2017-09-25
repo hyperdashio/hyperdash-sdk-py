@@ -1,15 +1,15 @@
 # Hyperdash Python SDK
 
-[Hyperdash](https://hyperdash.io) is a machine learning monitoring library, written in Python and capable of running alongside Tensorflow, Scikit-Learn, and other modelling libraries. Hyperdash provides visualizations similar to Tensorboard. It was developed with a focus on enabling fast knowledge gain.
+[Hyperdash](https://hyperdash.io) is a machine learning monitoring library capable of running alongside Tensorflow, Scikit-Learn, and other modelling libraries. It was developed with a focus on enabling fast knowledge gain.
 
-Use Hyperdash if you need model monitoring that:
+Use Hyperdash if you're looking for cloud-based model monitoring that:
 
-* Is fast and easy-to-use in scripts and Jupyter.
+* Is fast and easy-to-use with scripts and Jupyter.
 * Tracks your hyperparameters across different model experiments.
 * Graphs performance metrics (loss, reward, etc.) in real-time.
+* Can be viewed remotely on [__web__](https://hyperdash.io/dashboard), [__iOS__](https://itunes.apple.com/us/app/hyperdash-machine-learning-monitoring/id1257582233), and [__Android__](https://play.google.com/store/apps/details?id=com.hyperdash) without self-hosting (e.g. Tensorboard).
 * Saves your experiment's print output (standard out / error) as a local log file.
 * Notifies you when a long-running experiment has finished.
-* Can be viewed remotely on [__web__](https://hyperdash.io/dashboard), [__iOS__](https://itunes.apple.com/us/app/hyperdash-machine-learning-monitoring/id1257582233), and/or [__Android__](https://play.google.com/store/apps/details?id=com.hyperdash).
 
 Hyperdash is compatible with: **Python 2.7-3.6**
 
@@ -45,6 +45,11 @@ Or use pipe:
 ```bash
 ./catsdogs.sh | hd pipe
 ```
+In Jupyter:
+
+<img width="300" alt="screen shot 2017-09-24 at 7 27 37 pm" src="https://user-images.githubusercontent.com/1892071/30790069-835da34c-a15e-11e7-954f-9b90ca5634f0.png">
+
+
 
 ## Experiment instrumentation
 If you are interested in tracking **hyperparameters** and **performance metrics**, you'll want to use the **Experiment** api. Experiment objects are created with a model name, then auto-started and auto-incremented. By default, Experiment will record print logs. Here is an example of a simple Scikit Learn classifier instrumented:
