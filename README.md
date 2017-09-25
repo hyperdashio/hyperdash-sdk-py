@@ -1,7 +1,5 @@
 # Hyperdash Python SDK
 
-
-
 [Hyperdash](https://hyperdash.io) is a machine learning monitoring library, written in Python and capable of running alongside Tensorflow, Scikit-Learn, and other modelling libraries. Hyperdash provides visualizations similar to Tensorboard. It was developed with a focus on enabling fast knowledge gain.
 
 Use Hyperdash if you need model monitoring that:
@@ -9,7 +7,7 @@ Use Hyperdash if you need model monitoring that:
 * Is fast and easy-to-use in scripts and Jupyter.
 * Tracks your hyperparameters across different model experiments.
 * Graphs performance metrics (loss, reward, etc.) in real-time.
-* Saves your experiment's output (standard out / error) as a local log file.
+* Saves your experiment's print output (standard out / error) as a local log file.
 * Notifies you when a long-running experiment has finished.
 * Can be viewed remotely on [__web__](https://hyperdash.io/dashboard), [__iOS__](https://itunes.apple.com/us/app/hyperdash-machine-learning-monitoring/id1257582233), and/or [__Android__](https://play.google.com/store/apps/details?id=com.hyperdash).
 
@@ -38,18 +36,18 @@ $ hyperdash demo
 ```
 
 # Learn Hyperdash in 60 seconds
-### Pure logging 
-If all you need is logging and notifications, simply prefix any terminal command:
+## Pure logging 
+If all you need is logging and notifications, simply prefix **any** terminal command:
 ```bash
 hd run -n "Hotdog CNN" python hotdog.py
 ```
 Or use pipe:
 ```bash
-./catsdogs | hd pipe
+./catsdogs.sh | hd pipe
 ```
 
-### Experiment instrumentation
-If you are interested in tracking **hyperparameters** and **performance metrics**, you'll want to use the **Experiment** api. Experiment objects are created with a model name, then auto-started and auto-incremented. The experiment object lets you track **hyperparameters** and **performance metrics**, while also recording standard out logs.
+## Experiment instrumentation
+If you are interested in tracking **hyperparameters** and **performance metrics**, you'll want to use the **Experiment** api. Experiment objects are created with a model name, then auto-started and auto-incremented. By default, Experiment will record print logs. Here is an example of a simple Scikit Learn classifier instrumented:
 ```python
 # digits.py
 from sklearn import svm, datasets
@@ -61,9 +59,8 @@ test_cases = 50
 X_train, y_train = digits.data[:-test_cases], digits.target[:-test_cases]
 X_test, y_test = digits.data[-test_cases:], digits.target[-test_cases:]
 
-# Create an experiment with a model name and stdout logging enabled, then autostart
-exp = Experiment("Digits Classifier", capture_io=True)
-
+# Create an experiment with a model name, then autostart
+exp = Experiment("Digits Classifier")
 # Record the value of hyperparameter gamma for this experiment
 gamma = exp.param("gamma", 0.1)
 # Param can record any basic type (Number, Boolean, String)
@@ -84,16 +81,20 @@ Hyperparameters and metrics are pretty printed for your logs and reference:
 Experiment "digits-classifier_2017-09-20t18-50-55-258215" complete.
 Logs are available locally at: /Users/username/.hyperdash/logs/digits-classifier/digits-classifier_2017-09-20t18-50-55-258215.log
 ```
-### You've learned Hyperdash!
+You can also disable logging by setting `capture_io` to false:
+```python
+exp = Experiment("Digits Classifier", capture_io=False)
+```
+## You've learned Hyperdash!
 Visualize your experiments in the Hyperdash [__web__](https://hyperdash.io/dashboard), [__iOS__](https://itunes.apple.com/us/app/hyperdash-machine-learning-monitoring/id1257582233), and [__Android__](https://play.google.com/store/apps/details?id=com.hyperdash) apps.
+________________
 
-# More information (Optional)
+# More information
 - Jupyter/IPython tips
-- Decorator API
+- Decorator Experiment API
 - API key management
-- Watching a log file
 
-### IPython/Jupyter Notebook
+## IPython/Jupyter Notebook
 
 <img width="700" alt="Hyperdash in Jupyter" src="https://user-images.githubusercontent.com/1892071/30736813-1a7fcb7e-9f39-11e7-812b-f1b77ee33dab.png">
  
@@ -101,35 +102,20 @@ Note: by default all print statements will be redirected to the cell that create
 
 The SDK currently doesn't support mid-experiment parameter redeclaration. Remember to `end()` your experiment before redeclaring `exp`.
 
-### Decorating a Python function
-Import the monitor function, and apply it as a decorator to a function that runs your machine learning job. The only argument you need to pass to the monitor function is the name of the model that you're training.
-
-```
+## Decorator experiment API
+If your experiment is wrapped in a function, the decorator API saves you the trouble of having to remember to write `exp.end()`.
+```python
 from hyperdash.sdk import monitor
 
 @monitor("dogs vs. cats")
-def train_dogs_vs_cats(hd_client): # Get hd_client Experiment object as argument to function.
-  hd_client.param("learning rate", 0.005)
+def train_dogs_vs_cats(exp): # Get Experiment object as argument to function.
+  lr = exp.param("learning rate", 0.005)
+  model = Model(lr)
   model.fit()
-  hd_client.metric(model.accuracy())
+  exp.metric(model.accuracy())
 ```
-
-### Pure Logging
-If you do not need instrumentation, you can use Hyperdash even easier. Simply prefix any terminal command with `hyperdash run`:
-
-```
-hyperdash run -n "My test python script" python my_test_script.py
-```
-
-or
-
-```
-hyperdash run -n "My test bash script" ./my_test_bash_script.sh
-```
-
-It doesn't matter what language your script is written in, if it can be executed from the command line then you can wrap it with the `run`  command
-
-### API key storage
+## API Keys
+### Storage
 
 If you signed up through the CLI, then your API key is already installed in hyperdash.json file in the home directory of your user.
 
