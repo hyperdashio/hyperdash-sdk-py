@@ -14,9 +14,10 @@ from six.moves import input
 from six.moves.queue import Queue
 from six import PY2
 
+from hyperdash.constants import API_NAME_CLI_RUN
 from hyperdash.constants import get_hyperdash_json_home_path
 from hyperdash.constants import get_hyperdash_json_paths
-from hyperdash import monitor
+from hyperdash import _monitor
 
 from .constants import get_base_url
 
@@ -197,7 +198,7 @@ def keys(args=None):
 
 
 def run(args):
-    @monitor(args.name)
+    @_monitor(args.name, api_key_getter=None, capture_io=True, api_name=API_NAME_CLI_RUN)
     def wrapped():
         # Python detects when its connected to a pipe and buffers output.
         # Spawn the users program with the PYTHONUNBUFFERED environment
