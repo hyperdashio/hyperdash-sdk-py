@@ -3,8 +3,7 @@ from setuptools import setup
 
 
 with open(os.path.join("hyperdash", "VERSION"), "r") as f:
-    VERSION_FILE = f.read().strip()
-VERSION = VERSION_FILE.read().strip()
+    VERSION = f.read().strip()
 
 setup(
     name='hyperdash',
