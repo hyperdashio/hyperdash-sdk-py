@@ -2,7 +2,7 @@ import os
 from setuptools import setup
 
 
-with open(os.path.join(os.path.dirname(__file__), "VERSION"), "r") as f:
+with open(os.path.join("hyperdash", "VERSION"), "r") as f:
     VERSION_FILE = f.read().strip()
 VERSION = VERSION_FILE.read().strip()
 
