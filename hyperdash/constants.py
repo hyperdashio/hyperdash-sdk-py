@@ -72,4 +72,5 @@ def get_hyperdash_json_local_path():
 
 def get_hyperdash_version():
     """Return the version of Hyperdash as a string."""
-    return open(os.path.join(os.path.dirname(__file__), 'VERSION')).read().strip()
+    with open(os.path.join(os.path.dirname(__file__), "VERSION"), "r") as f:
+        return f.read().strip()
