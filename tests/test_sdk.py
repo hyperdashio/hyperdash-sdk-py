@@ -16,12 +16,19 @@ import requests
 from hyperdash import monitor
 from hyperdash import Experiment
 from mocks import init_mock_server
+from hyperdash.constants import API_KEY_NAME
+from hyperdash.constants import API_NAME_EXPERIMENT
+from hyperdash.constants import API_NAME_MONITOR
 from hyperdash.constants import get_hyperdash_logs_home_path_for_job
+from hyperdash.constants import get_hyperdash_version
+from hyperdash.constants import VERSION_KEY_NAME
 from threading import Thread
 from hyperdash.constants import MAX_LOG_SIZE_BYTES
 from hyperdash.hyper_dash import HyperDash
 
+
 server_sdk_messages = []
+server_sdk_headers = []
 
 if PY2:
     lowercase_letters = string.lowercase
@@ -32,7 +39,9 @@ else:
 class TestSDK(object):
     def setup(self):
         global server_sdk_messages
+        global server_sdk_headers
         server_sdk_messages = []
+        server_sdk_headers = []
 
     @classmethod
     def setup_class(_cls):
@@ -40,10 +49,16 @@ class TestSDK(object):
 
         def sdk_message(response):
             global server_sdk_messages
+            global server_sdk_headers
             message = json.loads(response.rfile.read(
                 int(response.headers["Content-Length"])).decode("utf-8"))
 
+            # Store messages / headers so we can assert on them later
             server_sdk_messages.append(message)
+            if PY2:
+                server_sdk_headers.append(response.headers.dict)
+            else:
+                server_sdk_headers.append(response.headers)
 
             # Add response status code.
             response.send_response(requests.codes.ok)
@@ -112,6 +127,10 @@ class TestSDK(object):
             for log in logs:
                 assert_in(log, data)
         os.remove(latest_log_file)
+
+        # Make sure correct API name / version headers are sent
+        assert server_sdk_headers[0][API_KEY_NAME] == API_NAME_MONITOR
+        assert server_sdk_headers[0][VERSION_KEY_NAME] == get_hyperdash_version()
 
     def test_monitor_raises_exceptions(self):
         exception_raised = True
@@ -357,6 +376,10 @@ class TestSDK(object):
         
         captured_out = faked_out.getvalue()
         assert "error" not in captured_out
+
+        # Make sure correct API name / version headers are sent
+        assert server_sdk_headers[0][API_KEY_NAME] == API_NAME_EXPERIMENT
+        assert server_sdk_headers[0][VERSION_KEY_NAME] == get_hyperdash_version()
         
         # Make sure logs were persisted
         expect_logs = [

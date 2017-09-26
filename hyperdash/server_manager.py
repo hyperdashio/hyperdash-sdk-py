@@ -13,10 +13,13 @@ from requests.exceptions import BaseHTTPError
 from requests import Request
 from requests import Session as HTTPSession
 
+from .constants import API_KEY_NAME
 from .constants import AUTH_KEY_NAME
 from .constants import CACHE_API_KEY_FOR_SECONDS
 from .constants import get_hyperdash_json_paths
 from .constants import get_http_url
+from .constants import get_hyperdash_version
+from .constants import VERSION_KEY_NAME
 from .sdk_message import create_heartbeat_message
 
 
@@ -108,7 +111,7 @@ class ServerManagerBase():
     def cleanup(self, sdk_run_uuid):
         raise NotImplementedError()
 
-    def __init__(self, custom_api_key_getter, parent_logger):
+    def __init__(self, custom_api_key_getter, parent_logger, api_name):
         self.out_buf = deque()
         self.in_buf = deque()
         self.logger = parent_logger.getChild(__name__)
@@ -118,6 +121,8 @@ class ServerManagerBase():
         self.api_key = None
         self.fetched_api_key_at = None
         self.last_message_sent_at = None
+        self.version = get_hyperdash_version()
+        self.api_name = api_name
 
 
 class ServerManagerHTTP(ServerManagerBase):
@@ -189,7 +194,11 @@ class ServerManagerHTTP(ServerManagerBase):
             return self.s.post(
                 get_http_url(),
                 json=json.loads(message),
-                headers={AUTH_KEY_NAME: self.get_api_key()},
+                headers={
+                    AUTH_KEY_NAME: self.get_api_key(),
+                    VERSION_KEY_NAME: self.version,
+                    API_KEY_NAME: self.api_name,
+                },
                 timeout=timeout_seconds,
             )
         except Exception:
@@ -202,8 +211,8 @@ class ServerManagerHTTP(ServerManagerBase):
         # Try to flush any remaining messages
         return self.tick(sdk_run_uuid)
 
-    def __init__(self, custom_api_key_getter, parent_logger):
-        ServerManagerBase.__init__(self, custom_api_key_getter, parent_logger)
+    def __init__(self, custom_api_key_getter, parent_logger, api_name):
+        ServerManagerBase.__init__(self, custom_api_key_getter, parent_logger, api_name)
         # TODO: Keep alive
         # TODO: Timeout
         self.s = HTTPSession()
