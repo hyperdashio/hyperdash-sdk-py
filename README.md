@@ -30,10 +30,10 @@ It doesn't matter what language your script is written in, if it can be executed
 ### Decorating a Python function
 Import the monitor function, and apply it as a decorator to a function that runs your machine learning job. The only argument you need to pass to the monitor function is the name of the model that you're training.
 
-```
+```python
 # test_script.py
 
-from hyperdash.sdk import monitor
+from hyperdash import monitor
 
 @monitor("dogs vs. cats")
 def train_dogs_vs_cats():
@@ -83,10 +83,10 @@ You can alternatively override this API key with a hyperdash.json file in your l
 
 Finally, the monitor function accepts an api_key_getter argument that if passed in will be called everytime we need to retrieve your API key. Example:
 
-```
+```python
 # test_script.py
 
-from hyperdash.sdk import monitor
+from hyperdash import monitor
 
 # This function can do anything you want, as long as it returns a Hyperdash API key as a string
 def get_api_key():
