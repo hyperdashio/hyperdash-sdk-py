@@ -16,6 +16,7 @@ setup(
     entry_points={
         'console_scripts': ['hyperdash = hyperdash_cli.cli:main']
     },
+    package_data={'': ['VERSION']},
     version=VERSION,
     description='Hyperdash.io CLI and SDK',
     author='Hyperdash',
