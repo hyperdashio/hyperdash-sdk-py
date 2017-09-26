@@ -225,19 +225,25 @@ class TestSDK(object):
     def test_metric(self):
         job_name = "metric job name"
 
-        metrics = {
-            "acc": 99,
-            "loss": 0.00000000041,
-            "val_loss": 4324320984309284328743827432,
-            "mse": -431.321,
-        }
+        metrics = [
+            ("acc", 99),
+            ("loss", 0.00000000041),
+            ("val_loss", 4324320984309284328743827432),
+            ("mse", -431.321),
+        ]
 
         @monitor(job_name)
         def test_job(hd_client):
-            for key, val in six.iteritems(metrics):
+            for key, val in metrics:
                 hd_client.metric(key, val)
-            return
-
+            # These ones should not be emitted because we didn't
+            # wait long enough
+            for key, val in metrics:
+                hd_client.metric(key, val-1)
+            time.sleep(1.0)
+            # These one's should be emitted
+            for key, val in metrics:
+                hd_client.metric(key, val-2)
         test_job()
 
         sent_vals = []
@@ -246,9 +252,19 @@ class TestSDK(object):
             if "name" in payload:
                 sent_vals.append(payload)
 
-        assert len(metrics) == len(sent_vals)
-        for pair in sent_vals:
-            assert metrics[pair["name"]] == pair["value"]
+        assert len(sent_vals) == len(metrics)*2
+        expected_metrics = [
+            {"is_internal": False, "name": "acc", "value": 99},
+            {"is_internal": False, "name": "loss", "value": 0.00000000041},
+            {"is_internal": False, "name": "val_loss", "value": 4324320984309284328743827432},
+            {"is_internal": False, "name": "mse", "value": -431.321},
+            {"is_internal": False, "name": "acc", "value": 97},
+            {"is_internal": False, "name": "loss", "value": -1.99999999959},
+            {"is_internal": False, "name": "val_loss", "value": 4324320984309284328743827430},
+            {"is_internal": False, "name": "mse", "value": -433.321}
+        ]
+        for i, message in enumerate(sent_vals):
+            assert message == expected_metrics[i]
 
     def test_param(self):
         params = (("lr", 0.5), ("loss_function", "MSE"))
@@ -292,6 +308,7 @@ class TestSDK(object):
             exp.log("test print")
             exp.param("batch size", 32)
             for i in exp.iter(2):
+                time.sleep(1)
                 exp.metric("accuracy", i*0.2)
             time.sleep(0.1)
             exp.end()
@@ -385,8 +402,12 @@ class TestSDK(object):
             def test_job(hd_client):
                 hd_client.param("user_param", "test")
                 for i in hd_client.iter(5):
+                    # Sleep because metrics are sample at 1s
+                    # frequency by default
+                    time.sleep(1.0)
                     hd_client.metric("loss", i)
                 for i in hd_client.iter(3):
+                    time.sleep(1.0)
                     hd_client.metric("loss", i)
             test_job()
 
