@@ -230,10 +230,7 @@ class TestCLI(object):
         w_pipe = os.fdopen(w_d, 'w')
         with patch('hyperdash_cli.cli.get_access_token_from_file', Mock(return_value=DEFAULT_ACCESS_TOKEN)), patch('sys.stdin', new=r_pipe), patch('sys.stdout', new=StringIO()) as fake_out:
             for input_str in inputs:
-                if PY2:
-                    w_pipe.write(input_str)
-                else:
-                    w_pipe.write(str.encode(input_str))
+                w_pipe.write(input_str)
             w_pipe.flush()
             w_pipe.close()
 
