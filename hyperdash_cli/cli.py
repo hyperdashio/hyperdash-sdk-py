@@ -14,6 +14,7 @@ from six.moves import input
 from six.moves.queue import Queue
 from six import PY2
 
+from hyperdash.constants import API_NAME_CLI_PIPE
 from hyperdash.constants import API_NAME_CLI_RUN
 from hyperdash.constants import get_hyperdash_json_home_path
 from hyperdash.constants import get_hyperdash_json_paths
@@ -215,41 +216,7 @@ def run(args):
             stderr=subprocess.PIPE,
             bufsize=0,
             env=subprocess_env,
-            # universal_newlines=True
         )
-
-        # Reads a pipe one character at a time, yielding
-        # buffers everytime it encounters whitespace. This
-        # allows us read the pipe as fast as possible.
-        #
-        # We yield everytime we encounter whitespace instead
-        # of on every byte because yielding every byte individually
-        # would break the UTF-8 decoding of multi-byte characters.
-        #
-        # Before this we were using readline() which works in most
-        # cases, but breaks for scripts that use loading bars
-        # like tqdm which do not output a \n everytime they
-        # update. Using read() doesn't work either because there
-        # is no guarantee of when that will be flushed so
-        # terminal updates can be delayed.
-        def generate_tokens(pipe):
-            buf = []
-            while True:
-                # read one byte
-                b = pipe.read(1)
-                # We're done
-                if not b:
-                    if buf:
-                        # Yield what we have
-                        yield b''.join(buf)
-                    return
-                # If its whitespace, yield what we have including the whitespace
-                if b.isspace() and buf:
-                    yield b''.join(buf) + b
-                    buf = []
-                # Otherwise grow the buf
-                else:
-                    buf.append(b)
 
         # The subprocess's output will be written to the associated
         # pipes. In order for the @monitor decorator to have access
@@ -257,20 +224,10 @@ def run(args):
         # stdout/stderr respectively (which have been redirected by
         # the monitor decorator)
         def stdout_loop():
-            for data in generate_tokens(p.stdout):
-                # In PY2 data is str, in PY3 its bytes
-                if PY2:
-                    sys.stdout.write(data)
-                else:
-                    sys.stdout.write(data.decode("utf-8", "ignore"))
+            _connect_streams(p.stdout, sys.stdout)
 
         def stderr_loop():
-            for data in generate_tokens(p.stderr):
-                # In PY2 data is str, in PY3 its bytes
-                if PY2:
-                    sys.stderr.write(data)
-                else:
-                    sys.stderr.write(data.decode("utf-8", "ignore"))
+            _connect_streams(p.stderr, sys.stderr)
 
         stdout_thread = Thread(target=stdout_loop)
         stderr_thread = Thread(target=stderr_loop)
@@ -282,6 +239,59 @@ def run(args):
         stdout_thread.join()
         stderr_thread.join()
     wrapped()
+
+
+def pipe(args):
+    @_monitor(args.name, api_key_getter=None, capture_io=True, api_name=API_NAME_CLI_PIPE)
+    def wrapped():
+        # Read STDIN and write it to STDOUT so it shows up in the terminal and is
+        # captured by the monitor decorator
+        _connect_streams(sys.stdin, sys.stdout)
+    wrapped()
+
+
+# Reads a pipe one character at a time, yielding
+# buffers everytime it encounters whitespace. This
+# allows us read the pipe as fast as possible.
+#
+# We yield everytime we encounter whitespace instead
+# of on every byte because yielding every byte individually
+# would break the UTF-8 decoding of multi-byte characters.
+#
+# Before this we were using readline() which works in most
+# cases, but breaks for scripts that use loading bars
+# like tqdm which do not output a \n everytime they
+# update. Using read() doesn't work either because there
+# is no guarantee of when that will be flushed so
+# terminal updates can be delayed.
+def _gen_tokens_from_stream(stream):
+    buf = []
+    while True:
+        # read one byte
+        b = stream.read(1)
+        # We're done
+        if not b:
+            if buf:
+                # Yield what we have
+                yield b''.join(buf)
+            return
+        # If its whitespace, yield what we have including the whitespace
+        if b.isspace() and buf:
+            yield b''.join(buf) + b
+            buf = []
+        # Otherwise grow the buf
+        else:
+            buf.append(b)
+
+
+def _connect_streams(in_stream, out_stream):
+    """Connects two streams and blocks until the input stream is closed."""
+    for data in _gen_tokens_from_stream(in_stream):
+        # In PY2 data is str, in PY3 its bytes
+        if PY2:
+            out_stream.write(data)
+        else:
+            out_stream.write(data.decode("utf-8", "ignore"))
 
 
 def version(args=None):
@@ -410,6 +420,10 @@ def main():
     run_parser.add_argument('--name', '-name', '--n', '-n', required=True)
     run_parser.add_argument('args', nargs=argparse.REMAINDER)
     run_parser.set_defaults(func=run)
+
+    pipe_parser = subparsers.add_parser('pipe')
+    pipe_parser.add_argument('--name', '-name', '--n', '-n', required=True)
+    pipe_parser.set_defaults(func=pipe)
 
     keys_parser = subparsers.add_parser('version')
     keys_parser.set_defaults(func=version)

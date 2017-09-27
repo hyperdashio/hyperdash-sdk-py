@@ -16,6 +16,7 @@ MAX_LOG_SIZE_BYTES = 20480
 API_NAME_MONITOR = "monitor"
 API_NAME_EXPERIMENT = "experiment"
 API_NAME_CLI_RUN = "cli_run"
+API_NAME_CLI_PIPE = "cli_pipe"
 API_NAME_JUPYTER = "jupyter"
 
 def get_base_http_url():
