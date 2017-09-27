@@ -1,7 +1,9 @@
+import os
 from setuptools import setup
 
 
-version = "0.11.1"
+with open(os.path.join("hyperdash", "VERSION"), "r") as f:
+    VERSION = f.read().strip()
 
 setup(
     name='hyperdash',
@@ -17,7 +19,8 @@ setup(
             'hd = hyperdash_cli.cli:main',
             ]
     },
-    version=version,
+    package_data={'': ['VERSION']},
+    version=VERSION,
     description='Hyperdash.io CLI and SDK',
     author='Hyperdash',
     author_email='support@hyperdash.io',
