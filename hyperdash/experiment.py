@@ -116,6 +116,9 @@ class Experiment:
         return self._hd_client.iter(n,log)
 
     def end(self):
+        if self._experiment_runner.done:
+            return
+
         with self.lock:
             sys.stdout, sys.stderr = self._old_out, self._old_err
             self._experiment_runner.exit_cleanly = True
