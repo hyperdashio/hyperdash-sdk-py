@@ -267,8 +267,11 @@ def pipe(args):
 def _gen_tokens_from_stream(stream):
     buf = []
     while True:
-        # read one byte
-        b = stream.read(1)
+        # read one byte        
+        if PY2:
+            b = stream.read(1)
+        else:
+            b = stream.buffer.read(1)
         # We're done
         if not b:
             if buf:
