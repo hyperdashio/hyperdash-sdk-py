@@ -180,7 +180,7 @@ class ServerManagerHTTP(ServerManagerBase):
                         e),
                 )
             except Exception as e:
-                self.logger.error(format_exc())
+                self.logger.debug(format_exc())
                 self.log_error_once(
                     "Unable to communicate with Hyperdash servers")
 
