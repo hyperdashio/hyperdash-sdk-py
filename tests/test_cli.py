@@ -218,7 +218,13 @@ class TestCLI(object):
 
     def test_pipe(self):
         job_name = "some_job_name"
-        inputs = [" ", "hello world ", "WTF DUDE"]
+        inputs = [
+            "hello world",
+            "foo bar baz",
+            "this is the test script",
+            "字",
+            "{'some_obj_key': 'some_value'}",
+        ]
         r_d, w_d = os.pipe()
         r_pipe = os.fdopen(r_d)
         w_pipe = os.fdopen(w_d, 'w')
