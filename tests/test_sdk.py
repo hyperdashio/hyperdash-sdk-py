@@ -422,25 +422,16 @@ class TestSDK(object):
         # Run a test job that includes the iterator function
         with patch("sys.stdout", new=StringIO()) as fake_out:
             @monitor("test iter")
-<<<<<<< HEAD
             def test_job(exp):
                 exp.param("user_param", "test")
                 for i in exp.iter(5):
-                    exp.metric("loss", i)
-                for i in exp.iter(3):
-                    exp.metric("loss", i)
-=======
-            def test_job(hd_client):
-                hd_client.param("user_param", "test")
-                for i in hd_client.iter(5):
                     # Sleep because metrics are sample at 1s
                     # frequency by default
                     time.sleep(1.0)
-                    hd_client.metric("loss", i)
-                for i in hd_client.iter(3):
+                    exp.metric("loss", i)
+                for i in exp.iter(3):
                     time.sleep(1.0)
-                    hd_client.metric("loss", i)
->>>>>>> master
+                    exp.metric("loss", i)
             test_job()
 
         # Collect sent SDK messages that had a params payload
