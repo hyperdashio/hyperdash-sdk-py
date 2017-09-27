@@ -50,7 +50,6 @@ In Jupyter:
 <img width="300" alt="screen shot 2017-09-24 at 7 27 37 pm" src="https://user-images.githubusercontent.com/1892071/30790069-835da34c-a15e-11e7-954f-9b90ca5634f0.png">
 
 
-
 ## Experiment instrumentation
 If you are interested in tracking **hyperparameters** and **performance metrics**, you'll want to use the **Experiment** api. Experiment objects are created with a model name, then auto-started and auto-incremented. By default, Experiment will record print logs. Here is an example of a simple Scikit Learn classifier instrumented:
 ```python
@@ -110,7 +109,7 @@ The SDK currently doesn't support mid-experiment parameter redeclaration. Rememb
 ## Decorator experiment API
 If your experiment is wrapped in a function, the decorator API saves you the trouble of having to remember to write `exp.end()`.
 ```python
-from hyperdash.sdk import monitor
+from hyperdash import monitor
 
 @monitor("dogs vs. cats")
 def train_dogs_vs_cats(exp): # Get Experiment object as argument to function.
@@ -131,7 +130,7 @@ Finally, the monitor function accepts an api_key_getter argument that if passed 
 ```python
 # test_script.py
 
-from hyperdash.sdk import monitor
+from hyperdash import monitor
 
 # This function can do anything you want, as long as it returns a Hyperdash API key as a string
 def get_api_key():

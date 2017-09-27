@@ -6,6 +6,7 @@ import uuid
 
 from .client import HDClient
 from .code_runner import CodeRunner
+from .constants import API_NAME_MONITOR
 from .hyper_dash import HyperDash
 from .io_buffer import IOBuffer
 from .server_manager import ServerManagerHTTP
@@ -13,6 +14,10 @@ from .utils import get_logger
 
 
 def monitor(model_name, api_key_getter=None, capture_io=True):
+    return _monitor(model_name, api_key_getter, capture_io, API_NAME_MONITOR)
+
+
+def _monitor(model_name, api_key_getter, capture_io, api_name):
     def _monitor(f):
         def monitored(*args, **kwargs):
             # Create a UUID to uniquely identify this run from the SDK's point of view
@@ -38,7 +43,7 @@ def monitor(model_name, api_key_getter=None, capture_io=True):
             else:
                 f.callcount += 1
             try:
-                server_manager = ServerManagerHTTP(api_key_getter, logger)
+                server_manager = ServerManagerHTTP(api_key_getter, logger, api_name)
                 hd_client = HDClient(logger, server_manager, current_sdk_run_uuid)
                 code_runner = CodeRunner(f, hd_client, logger, *args, **kwargs)
                 hyper_dash = HyperDash(

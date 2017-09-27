@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from .client import HDClient
+from .constants import API_NAME_EXPERIMENT
 from .monitor import monitor
 from .io_buffer import IOBuffer
 from .server_manager import ServerManagerHTTP
@@ -84,7 +85,7 @@ class Experiment:
             # Redirect STDOUT/STDERR to buffers
             sys.stdout, sys.stderr = out
 
-        server_manager = ServerManagerHTTP(api_key_getter, self._logger)
+        server_manager = ServerManagerHTTP(api_key_getter, self._logger, API_NAME_EXPERIMENT)
         self._hd_client = HDClient(self._logger, server_manager, current_sdk_run_uuid)
         self._hd = HyperDash(
             model_name,

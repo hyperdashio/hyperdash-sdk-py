@@ -12,14 +12,25 @@ from nose.tools import assert_in
 
 import hyperdash_cli
 from mocks import init_mock_server
+from hyperdash.constants import API_KEY_NAME
+from hyperdash.constants import API_NAME_CLI_RUN
 from hyperdash.constants import get_hyperdash_json_home_path
 from hyperdash.constants import get_hyperdash_logs_home_path_for_job
+from hyperdash.constants import get_hyperdash_version
+from hyperdash.constants import VERSION_KEY_NAME
+
 
 DEFAULT_API_KEY = "y9bhlYMBivCu8cBj6SQPAbwjxSqnbR1w23TtR9n9yOM="
 DEFAULT_ACCESS_TOKEN = "72a84fc0-b272-480a-807d-fd4a40ee2a66"
 
+server_sdk_headers = []
+
 
 class TestCLI(object):
+    def setup(self):
+        global server_sdk_headers
+        server_sdk_headers = []
+
     @classmethod
     def setup_class(_cls):
         request_handle_dict = init_mock_server()
@@ -78,6 +89,12 @@ class TestCLI(object):
             response.wfile.write(response_content.encode('utf-8'))
 
         def sdk_message(response):
+            # Store headers so we can assert on them later
+            if PY2:
+                server_sdk_headers.append(response.headers.dict)
+            else:
+                server_sdk_headers.append(response.headers)
+
             # Add response status code.
             response.send_response(requests.codes.ok)
 
@@ -180,6 +197,10 @@ class TestCLI(object):
                 continue
             assert_in(expected, fake_out.getvalue())
 
+        # Make sure correct API name / version headers are sent
+        assert server_sdk_headers[0][API_KEY_NAME] == API_NAME_CLI_RUN
+        assert server_sdk_headers[0][VERSION_KEY_NAME] == get_hyperdash_version()
+
         # Make sure logs were persisted
         log_dir = get_hyperdash_logs_home_path_for_job(job_name)
         latest_log_file = max([
@@ -192,3 +213,13 @@ class TestCLI(object):
             for expected in expected_output:
                 assert_in(expected, data)
         os.remove(latest_log_file)
+
+    def test_version(self):
+        with patch('sys.stdout', new=StringIO()) as fake_out:
+            hyperdash_cli.version()
+
+        expected_output = [
+            "hyperdash {}".format(get_hyperdash_version())
+        ]
+        for expected in expected_output:
+            assert_in(expected, fake_out.getvalue())

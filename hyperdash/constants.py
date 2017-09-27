@@ -6,11 +6,17 @@ import six
 from slugify import slugify
 
 AUTH_KEY_NAME = "x-hyperdash-auth"
+VERSION_KEY_NAME = "x-hyperdash-version"
+API_KEY_NAME = "x-hyperdash-api"
 HTTP_ENDPOINT = "/api/v1/sdk/http"
 CACHE_API_KEY_FOR_SECONDS = 300
 # 20 KiB
 MAX_LOG_SIZE_BYTES = 20480
 
+API_NAME_MONITOR = "monitor"
+API_NAME_EXPERIMENT = "experiment"
+API_NAME_CLI_RUN = "cli_run"
+API_NAME_JUPYTER = "jupyter"
 
 def get_base_http_url():
     return six.text_type(os.environ.get(
@@ -62,3 +68,9 @@ def get_hyperdash_json_local_path():
     if not local_path:
         return None
     return os.path.join(local_path, "hyperdash.json")
+
+
+def get_hyperdash_version():
+    """Return the version of Hyperdash as a string."""
+    with open(os.path.join(os.path.dirname(__file__), "VERSION"), "r") as f:
+        return f.read().strip()

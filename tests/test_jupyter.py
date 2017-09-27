@@ -9,16 +9,33 @@ import nbformat
 from nbconvert.preprocessors import ExecutePreprocessor
 
 from hyperdash import monitor
+from hyperdash.constants import API_KEY_NAME
+from hyperdash.constants import API_NAME_JUPYTER
 from hyperdash.constants import get_hyperdash_logs_home_path_for_job
+from hyperdash.constants import get_hyperdash_version
+from hyperdash.constants import VERSION_KEY_NAME
 from mocks import init_mock_server
 
 
+server_sdk_headers = []
+
+
 class TestJupyter(object):
+    def setup(self):
+        global server_sdk_headers
+        server_sdk_headers = []
+
     @classmethod
     def setup_class(_cls):
         request_handle_dict = init_mock_server()
 
         def sdk_message(response):
+            # Store headers so we can assert on them later
+            if PY2:
+                server_sdk_headers.append(response.headers.dict)
+            else:
+                server_sdk_headers.append(response.headers)
+
             # Add response status code.
             response.send_response(requests.codes.ok)
 
@@ -67,6 +84,10 @@ class TestJupyter(object):
         # Verify that variables declared in previous cells can be affected
         third_cell_output = result[0]["cells"][2]["outputs"]
         assert third_cell_output[0].text == "a=1\n"
+
+        # Make sure correct API name / version headers are sent
+        assert server_sdk_headers[0][API_KEY_NAME] == API_NAME_JUPYTER
+        assert server_sdk_headers[0][VERSION_KEY_NAME] == get_hyperdash_version()
 
         # Make sure logs were persisted
         log_dir = get_hyperdash_logs_home_path_for_job("test_jupyter")
