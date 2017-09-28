@@ -149,18 +149,18 @@ class TestSDK(object):
 
         assert exception_raised
 
-    def test_monitor_with_hd_client_and_no_capture_io(self):
+    def test_monitor_with_experiment_and_no_capture_io(self):
         job_name = "some_job_name"
 
         with patch("sys.stdout", new=StringIO()):
             def worker(thread_num):
                 @monitor(job_name, capture_io=False)
-                def monitored_func(hd_client):
+                def monitored_func(exp):
                     print("this should not be in there")
-                    hd_client.logger.info(thread_num)
-                    hd_client.logger.info(
+                    exp.logger.info(thread_num)
+                    exp.logger.info(
                         "thread {} is doing some work".format(thread_num))
-                    hd_client.logger.info("字")
+                    exp.logger.info("字")
                     time.sleep(0.1)
                 return monitored_func
 
@@ -252,17 +252,17 @@ class TestSDK(object):
         ]
 
         @monitor(job_name)
-        def test_job(hd_client):
+        def test_job(exp):
             for key, val in metrics:
-                hd_client.metric(key, val)
+                exp.metric(key, val)
             # These ones should not be emitted because we didn't
             # wait long enough
             for key, val in metrics:
-                hd_client.metric(key, val-1)
+                exp.metric(key, val-1)
             time.sleep(1.0)
             # These one's should be emitted
             for key, val in metrics:
-                hd_client.metric(key, val-2)
+                exp.metric(key, val-2)
         test_job()
 
         sent_vals = []
@@ -291,9 +291,9 @@ class TestSDK(object):
         # Run a test job that emits some hyperparameters
         with patch("sys.stdout", new=StringIO()) as fake_out:
             @monitor("test params")
-            def test_job(hd_client):
+            def test_job(exp):
                 for param in params:
-                    hd_client.param(param[0], param[1])
+                    exp.param(param[0], param[1])
                     time.sleep(0.1)
                 return
             test_job()
@@ -422,16 +422,16 @@ class TestSDK(object):
         # Run a test job that includes the iterator function
         with patch("sys.stdout", new=StringIO()) as fake_out:
             @monitor("test iter")
-            def test_job(hd_client):
-                hd_client.param("user_param", "test")
-                for i in hd_client.iter(5):
+            def test_job(exp):
+                exp.param("user_param", "test")
+                for i in exp.iter(5):
                     # Sleep because metrics are sample at 1s
                     # frequency by default
                     time.sleep(1.0)
-                    hd_client.metric("loss", i)
-                for i in hd_client.iter(3):
+                    exp.metric("loss", i)
+                for i in exp.iter(3):
                     time.sleep(1.0)
-                    hd_client.metric("loss", i)
+                    exp.metric("loss", i)
             test_job()
 
         # Collect sent SDK messages that had a params payload

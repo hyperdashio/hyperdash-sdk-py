@@ -105,17 +105,31 @@ class Experiment:
         exp_thread = threading.Thread(target=run)
         exp_thread.daemon = True
         exp_thread.start()
+        self._ended = False
 
     def metric(self, name, value, log=True):
+        if self._ended:
+            self._logger.warn("Cannot send metric {}, experiment ended. Please start a new experiment.".format(name))
+            return
         return self._hd_client.metric(name, value, log)
 
     def param(self, name, value, log=True):
+        if self._ended:
+            self._logger.warn("Cannot send param {}, experiment ended. Please start a new experiment.".format(name))
+            return
         return self._hd_client.param(name, value, log)
 
     def iter(self, n, log=True):
+        if self._ended:
+            self._logger.warn("Cannot iterate, experiment ended. Please start a new experiment.")
+            return
         return self._hd_client.iter(n,log)
 
     def end(self):
+        if self._ended:
+            return
+
+        self._ended = True
         with self.lock:
             sys.stdout, sys.stderr = self._old_out, self._old_err
             self._experiment_runner.exit_cleanly = True
