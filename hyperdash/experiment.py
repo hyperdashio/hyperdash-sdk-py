@@ -109,19 +109,19 @@ class Experiment:
 
     def metric(self, name, value, log=True):
         if self._ended:
-            print("Cannot send metric {}, experiment ended. Please start a new experiment.".format(name))
+            self._logger.warn("Cannot send metric {}, experiment ended. Please start a new experiment.".format(name))
             return
         return self._hd_client.metric(name, value, log)
 
     def param(self, name, value, log=True):
         if self._ended:
-            print("Cannot send param {}, experiment ended. Please start a new experiment.".format(name))
+            self._logger.warn("Cannot send param {}, experiment ended. Please start a new experiment.".format(name))
             return
         return self._hd_client.param(name, value, log)
 
     def iter(self, n, log=True):
         if self._ended:
-            print("Cannot iterate, experiment ended. Please start a new experiment.")
+            self._logger.warn("Cannot iterate, experiment ended. Please start a new experiment.")
             return
         return self._hd_client.iter(n,log)
 
