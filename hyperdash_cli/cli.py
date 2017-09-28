@@ -246,7 +246,11 @@ def pipe(args):
     def wrapped():
         # Read STDIN and write it to STDOUT so it shows up in the terminal and is
         # captured by the monitor decorator
-        _connect_streams(sys.stdin, sys.stdout)
+        if PY2:
+            in_stream = sys.stdin
+        else:
+            in_stream = sys.stdin.buffer
+        _connect_streams(in_stream, sys.stdout)
     wrapped()
 
 
@@ -268,10 +272,7 @@ def _gen_tokens_from_stream(stream):
     buf = []
     while True:
         # read one byte        
-        if PY2:
-            b = stream.read(1)
-        else:
-            b = stream.buffer.read(1)
+        b = stream.read(1)
         # We're done
         if not b:
             if buf:

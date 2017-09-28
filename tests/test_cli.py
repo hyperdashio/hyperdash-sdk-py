@@ -229,10 +229,13 @@ class TestCLI(object):
         r_pipe = os.fdopen(r_d)
         w_pipe = os.fdopen(w_d, 'w')
         with patch('hyperdash_cli.cli.get_access_token_from_file', Mock(return_value=DEFAULT_ACCESS_TOKEN)), patch('sys.stdin', new=r_pipe), patch('sys.stdout', new=StringIO()) as fake_out:
-            for input_str in inputs:
-                w_pipe.write(input_str)
-            w_pipe.flush()
-            w_pipe.close()
+            def writer():
+                for input_str in inputs:
+                    w_pipe.write(input_str)
+                w_pipe.flush()
+                w_pipe.close()
+            writer_thread = Thread(target=writer)
+            writer_thread.start()
 
             hyperdash_cli.pipe(
                 argparse.Namespace(
