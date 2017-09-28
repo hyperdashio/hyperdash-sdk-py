@@ -4,6 +4,7 @@ import json
 import os
 
 import requests
+from threading import Thread
 
 from six import StringIO
 from six import PY2
@@ -13,6 +14,7 @@ from nose.tools import assert_in
 import hyperdash_cli
 from mocks import init_mock_server
 from hyperdash.constants import API_KEY_NAME
+from hyperdash.constants import API_NAME_CLI_PIPE
 from hyperdash.constants import API_NAME_CLI_RUN
 from hyperdash.constants import get_hyperdash_json_home_path
 from hyperdash.constants import get_hyperdash_logs_home_path_for_job
@@ -211,6 +213,56 @@ class TestCLI(object):
         with open(latest_log_file, 'r') as log_file:
             data = log_file.read()
             for expected in expected_output:
+                assert_in(expected, data)
+        os.remove(latest_log_file)
+
+    def test_pipe(self):
+        job_name = "some_job_name"
+        inputs = [
+            "hello world",
+            "foo bar baz",
+            "this is the test script",
+            "字",
+            "{'some_obj_key': 'some_value'}",
+        ]
+        r_d, w_d = os.pipe()
+        r_pipe = os.fdopen(r_d)
+        w_pipe = os.fdopen(w_d, 'w')
+        with patch('hyperdash_cli.cli.get_access_token_from_file', Mock(return_value=DEFAULT_ACCESS_TOKEN)), patch('sys.stdin', new=r_pipe), patch('sys.stdout', new=StringIO()) as fake_out:
+            def writer():
+                for input_str in inputs:
+                    w_pipe.write(input_str)
+                w_pipe.flush()
+                w_pipe.close()
+            writer_thread = Thread(target=writer)
+            writer_thread.start()
+
+            hyperdash_cli.pipe(
+                argparse.Namespace(
+                    name=job_name
+                )
+            )
+
+        for expected in inputs:
+            if PY2:
+                assert_in(expected, fake_out.getvalue().encode("utf-8"))
+                continue
+            assert_in(expected, fake_out.getvalue())
+
+        # Make sure correct API name / version headers are sent
+        assert server_sdk_headers[0][API_KEY_NAME] == API_NAME_CLI_PIPE
+        assert server_sdk_headers[0][VERSION_KEY_NAME] == get_hyperdash_version()
+
+        # Make sure logs were persisted
+        log_dir = get_hyperdash_logs_home_path_for_job(job_name)
+        latest_log_file = max([
+            os.path.join(log_dir, filename) for
+            filename in
+            os.listdir(log_dir)
+        ], key=os.path.getmtime)
+        with open(latest_log_file, 'r') as log_file:
+            data = log_file.read()
+            for expected in inputs:
                 assert_in(expected, data)
         os.remove(latest_log_file)
 
