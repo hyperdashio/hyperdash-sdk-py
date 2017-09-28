@@ -85,38 +85,41 @@ def demo(args=None):
     print("""
         Running the following program:
 
-        from hyperdash import monitor
+        from hyperdash import Experiment
 
+        exp = Experiment("Dogs vs. Cats")
+        n_estimators = exp.param("n_estimators", 500)
 
-        @monitor("dogs vs. cats")
-        def train_dogs_vs_cats():
-            print("Begin training model to distinguish dogs from cats...")
-            print("Epoch 1, accuracy: 50%")
-            time.sleep(5)
-            print("Epoch 2, accuracy: 75%")
-            time.sleep(5)
-            print("Epoch 3, accuracy: 85%")
-            time.sleep(5)
-            print("Epoch 4, accuracy: 95%")
-            time.sleep(5)
-            print("Epoch 5, accuracy: 100%")
+        print("Epoch 1")
+        exp.metric("accuracy", 0.50)
+        time.sleep(3)
+
+        print("Epoch 2")
+        exp.metric("accuracy", 0.75)
+        time.sleep(3)
+
+        print("Epoch 3")
+        exp.metric("accuracy", 0.85)
+
+        exp.end()
     """)
+    from hyperdash import Experiment
 
-    @monitor("dogs vs. cats")
-    def train_dogs_vs_cats():
-        print("Begin training model to distinguish dogs from cats...")
-        print("Epoch 1, accuracy: 50%")
-        time.sleep(5)
-        print("Epoch 2, accuracy: 75%")
-        time.sleep(5)
-        print("Epoch 3, accuracy: 85%")
-        time.sleep(5)
-        print("Epoch 4, accuracy: 95%")
-        time.sleep(5)
-        print("Epoch 5, accuracy: 100%")
+    exp = Experiment("Dogs vs. Cats")
+    n_estimators = exp.param("n_estimators", 500)
 
-    train_dogs_vs_cats()
+    print("Epoch 1")
+    exp.metric("accuracy", 0.50)
+    time.sleep(3)
 
+    print("Epoch 2")
+    exp.metric("accuracy", 0.75)
+    time.sleep(3)
+
+    print("Epoch 3")
+    exp.metric("accuracy", 0.85)
+
+    exp.end()
 
 def login(args=None):
     email = get_input("Email address: ")
