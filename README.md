@@ -107,7 +107,7 @@ Note: by default all print statements will be redirected to the cell that create
 The SDK currently doesn't support mid-experiment parameter redeclaration. Remember to `end()` your experiment before redeclaring `exp`.
 
 ## Decorator experiment API
-If your experiment is wrapped in a function, the decorator API saves you the trouble of having to remember to write `exp.end()`. The exact argument `exp` must be passed into the wrapped function.
+If your experiment is wrapped in a function, the decorator API saves you the trouble of having to remember to write `exp.end()`. The exact argument `exp` must be passed into the wrapped function to get access to the Experiment object.
 ```python
 from hyperdash import monitor
 
