@@ -16,11 +16,11 @@ Hyperdash is compatible with: **Python 2.7-3.6**
 ## Installation
 *Foreword: We care deeply about making Hyperdash fast and easy to install  on Linux, Mac, and Windows. If you find a snag along the way, please let us know at support@hyperdash.io!*
 
-Install Hyperdash in terminal from [pip](https://packaging.python.org/tutorials/installing-packages/#requirements-for-installing-packages):
+Install Hyperdash in terminal from [pip](https://packaging.python.org/tutorials/installing-packages/#requirements-for-installing-packages). Installing within a python virtual environment such as [virtualenv](https://github.com/pypa/virtualenv) is recommended. If you are having trouble installing via pip, a virtual environment will usually fix the problem.
 ```bash
 $ pip install --upgrade pip && pip install hyperdash
 ```
-Installing within a python virtual environment such as [virtualenv](https://github.com/pypa/virtualenv) is recommended. If you are having trouble installing via pip, a virtual environment will usually fix the problem.
+By installing via pip, you can call hyperdash from the command line via both `hyperdash` and `hd`.
 ```bash
 # Login if you have an account
 $ hd login
@@ -107,7 +107,7 @@ Note: by default all print statements will be redirected to the cell that create
 The SDK currently doesn't support mid-experiment parameter redeclaration. Remember to `end()` your experiment before redeclaring `exp`.
 
 ## Decorator experiment API
-If your experiment is wrapped in a function, the decorator API saves you the trouble of having to remember to write `exp.end()`.
+If your experiment is wrapped in a function, the decorator API saves you the trouble of having to remember to write `exp.end()`. The exact argument `exp` must be passed into the wrapped function.
 ```python
 from hyperdash import monitor
 
