@@ -83,41 +83,46 @@ def demo(args=None):
         return
 
     print("""
-        Running the following program:
+Running the following program:
 
-        from hyperdash import Experiment
+    from hyperdash import Experiment
+    exp = Experiment("Dogs vs. Cats")
 
-        exp = Experiment("Dogs vs. Cats")
-        n_estimators = exp.param("n_estimators", 500)
+    # Parameters
+    estimators = exp.param("Estimators", 500)
+    epochs = exp.param("Epochs", 5)
+    batch = exp.param("Batch Size", 64)
 
-        print("Epoch 1")
-        exp.metric("accuracy", 0.50)
-        time.sleep(3)
+    for epoch in xrange(1, epochs + 1):
+        accuracy = 1. - 1./epoch
+        loss = float(epochs - epoch)/epochs
+        print("Training model (epoch {})".format(epoch))
+        time.sleep(1)
 
-        print("Epoch 2")
-        exp.metric("accuracy", 0.75)
-        time.sleep(3)
+        # Metrics
+        exp.metric("Accuracy", accuracy)
+        exp.metric("Loss", loss)
 
-        print("Epoch 3")
-        exp.metric("accuracy", 0.85)
-
-        exp.end()
+    exp.end()
     """)
     from hyperdash import Experiment
-
     exp = Experiment("Dogs vs. Cats")
-    n_estimators = exp.param("n_estimators", 500)
 
-    print("Epoch 1")
-    exp.metric("accuracy", 0.50)
-    time.sleep(3)
+    # Parameters
+    estimators = exp.param("Estimators", 500)
+    epochs = exp.param("Epochs", 5)
+    batch = exp.param("Batch Size", 64)
 
-    print("Epoch 2")
-    exp.metric("accuracy", 0.75)
-    time.sleep(3)
+    for epoch in xrange(epochs):
+        accuracy = 1. - 1./(epoch + 1)
+        loss = float(epochs - epoch)/(epochs + 1)
 
-    print("Epoch 3")
-    exp.metric("accuracy", 0.85)
+        # Metrics
+        exp.metric("Accuracy", accuracy)
+        exp.metric("Loss", loss)
+
+        print("Training model (epoch {})".format(epoch))
+        time.sleep(1)
 
     exp.end()
 
