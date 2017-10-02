@@ -23,7 +23,7 @@ $ pip install --upgrade pip && pip install hyperdash
 By installing via pip, you can call hyperdash from the command line via both `hyperdash` and `hd`.
 ```bash
 # Login if you have an account
-$ hd login
+$ hyperdash login
 
 # Or signup free with an email
 $ hd signup
