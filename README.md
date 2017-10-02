@@ -1,4 +1,5 @@
 # Hyperdash Python SDK
+[![CircleCI](https://circleci.com/gh/hyperdashio/hyperdash-sdk-py/tree/master.svg?style=svg)](https://circleci.com/gh/hyperdashio/hyperdash-sdk-py/tree/master)
 
 [Hyperdash](https://hyperdash.io) is a machine learning monitoring library capable of running alongside Tensorflow, Scikit-Learn, and other modeling libraries. It was developed with a focus on enabling fast knowledge gain.
 
