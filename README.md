@@ -58,12 +58,6 @@ If you are interested in tracking **hyperparameters** and **performance metrics*
 from sklearn import svm, datasets
 from hyperdash import Experiment
 
-# Preprocess data
-digits = datasets.load_digits()
-test_cases = 50
-X_train, y_train = digits.data[:-test_cases], digits.target[:-test_cases]
-X_test, y_test = digits.data[-test_cases:], digits.target[-test_cases:]
-
 # Create an experiment with a model name, then autostart
 exp = Experiment("Digits Classifier")
 # Record the value of hyperparameter gamma for this experiment
