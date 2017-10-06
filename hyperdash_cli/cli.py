@@ -114,6 +114,8 @@ Running the following program:
     batch = exp.param("Batch Size", 64)
 
     for epoch in xrange(epochs):
+        print("Training model (epoch {})".format(epoch))
+
         accuracy = 1. - 1./(epoch + 1)
         loss = float(epochs - epoch)/(epochs + 1)
 
@@ -121,7 +123,6 @@ Running the following program:
         exp.metric("Accuracy", accuracy)
         exp.metric("Loss", loss)
 
-        print("Training model (epoch {})".format(epoch))
         time.sleep(1)
 
     exp.end()
