@@ -1,5 +1,14 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import sys
+import uuid
+import threading
+from threading import Lock
+
+from datetime import datetime
+
+from six.moves.queue import Queue
+
 from .client import HDClient
 from .constants import API_NAME_EXPERIMENT
 from .monitor import monitor
@@ -8,12 +17,6 @@ from .server_manager import ServerManagerHTTP
 from .hyper_dash import HyperDash
 from .utils import get_logger
 
-import sys
-import uuid
-import threading
-from threading import Lock
-
-from six.moves.queue import Queue
 # Python 2/3 compatibility
 __metaclass__ = type
 
@@ -30,6 +33,8 @@ class ExperimentRunner:
         self.done = done
         self.lock = Lock()
         self.exit_cleanly = exit_cleanly
+        self.start_time = None
+        self.end_time = None
 
     def is_done(self):
         with self.lock:
@@ -45,6 +50,15 @@ class ExperimentRunner:
         
     def should_run_as_thread(self):
         return False
+
+    def get_start_and_end_time(self):
+        return self.start_time, self.end_time
+
+    def _set_start_time(self, start_time):
+        self.start_time = start_time
+
+    def _set_end_time(self, end_time):
+        self.end_time = end_time
 
 class Experiment:
     """Experiment records hyperparameters and metrics. The recorded values
@@ -100,7 +114,9 @@ class Experiment:
         # Syncs with the seperate hyperdash messaging loop thread
         self.done_chan = Queue()
         def run():
+            self._experiment_runner._set_start_time(datetime.now())
             self._hd.run()
+            self._experiment_runner._set_end_time(datetime.now())
             self.done_chan.put(True)
         exp_thread = threading.Thread(target=run)
         exp_thread.daemon = True

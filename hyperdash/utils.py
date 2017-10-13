@@ -1,3 +1,4 @@
+import datetime
 import logging
 
 def get_logger(model_name, current_sdk_run_uuid, stdout_buffer):
@@ -14,3 +15,7 @@ def get_logger(model_name, current_sdk_run_uuid, stdout_buffer):
     logger.setLevel(logging.INFO)
     logger.addHandler(logging.StreamHandler(stdout_buffer))
     return logger
+
+
+def human_readable_duration(start_time, end_time):
+    return str(datetime.timedelta(seconds=(end_time-start_time).seconds))

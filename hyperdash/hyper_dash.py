@@ -13,13 +13,14 @@ from six.moves.queue import Queue
 from six import PY2
 from slugify import slugify
 
+from .code_runner import CodeRunner
 from .constants import get_hyperdash_logs_home_path
 from .constants import get_hyperdash_logs_home_path_for_job
 from .constants import MAX_LOG_SIZE_BYTES
 from .sdk_message import create_run_started_message
 from .sdk_message import create_run_ended_message
 from .sdk_message import create_log_message
-from .code_runner import CodeRunner
+from .utils import human_readable_duration
 
 # Python 2/3 compatibility
 __metaclass__ = type
@@ -214,7 +215,7 @@ class HyperDash:
             self.log_file.flush()
 
     def cleanup(self, exit_status):
-        self.print_log_file_location()
+        self.print_completion_message()
         self.capture_io(force_server_capture=True)
         self.server_manager.put_buf(
             create_run_ended_message(self.current_sdk_run_uuid, exit_status),
@@ -223,7 +224,7 @@ class HyperDash:
         self.shutdown_network_channel.put(True)
 
     def sudden_cleanup(self):
-        self.print_log_file_location()
+        self.print_completion_message()
         # Send what we can to local log
         self.capture_io()
         self.flush_log_file()
@@ -241,10 +242,15 @@ class HyperDash:
         # even if SystemExit is caught
         self.shutdown_network_channel.put(True)
 
-    def print_log_file_location(self):
+    def print_completion_message(self):
+        start_time, end_time = self.runner.get_start_and_end_time()
+        if not end_time:
+            end_time = datetime.datetime.now()
+
         if self.log_file_path:
-            self.logger.info("Logs for this run of {} are available locally at: {}".format(
+            self.logger.info("This run of {} ran for {} and logs are available locally at: {}".format(
                 self.job_name,
+                human_readable_duration(start_time, end_time),
                 self.log_file_path,
             ))
 
