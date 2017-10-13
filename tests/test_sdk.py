@@ -274,13 +274,13 @@ class TestSDK(object):
 
         assert len(sent_vals) == len(metrics)*2
         expected_metrics = [
-            {"is_internal": False, "name": "acc", "value": 99},
+            {"is_internal": False, "name": "acc", "value": 99.0},
             {"is_internal": False, "name": "loss", "value": 0.00000000041},
-            {"is_internal": False, "name": "val_loss", "value": 4324320984309284328743827432},
+            {"is_internal": False, "name": "val_loss", "value": 4324320984309284328743827432.0},
             {"is_internal": False, "name": "mse", "value": -431.321},
-            {"is_internal": False, "name": "acc", "value": 97},
+            {"is_internal": False, "name": "acc", "value": 97.0},
             {"is_internal": False, "name": "loss", "value": -1.99999999959},
-            {"is_internal": False, "name": "val_loss", "value": 4324320984309284328743827430},
+            {"is_internal": False, "name": "val_loss", "value": 4324320984309284328743827430.0},
             {"is_internal": False, "name": "mse", "value": -433.321}
         ]
         for i, message in enumerate(sent_vals):
