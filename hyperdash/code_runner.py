@@ -1,6 +1,7 @@
 # Python 2/3 compatibility
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+from datetime import datetime
 from inspect import getargspec
 from threading import Lock
 from traceback import format_exc
@@ -21,6 +22,8 @@ class CodeRunner:
         self.return_val = None
         self.exception = None
         self.lock = Lock()
+        self.start_time = None
+        self.end_time = None
 
     def wrap(self, f, *args, **kwargs):
         arg_spec = getargspec(f)
@@ -33,7 +36,9 @@ class CodeRunner:
             # TODO: Error handling
             return_val = None
             try:
+                self.start_time = datetime.now()
                 return_val = f(*args, **kwargs)
+                self.end_time = datetime.now()
             except Exception as e:
                 self.logger.error(format_exc())
                 with self.lock:
@@ -62,3 +67,7 @@ class CodeRunner:
 
     def should_run_as_thread(self):
         return True
+
+    def get_start_and_end_time(self):
+        with self.lock:
+            return self.start_time, self.end_time
