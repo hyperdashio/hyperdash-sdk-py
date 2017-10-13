@@ -12,6 +12,7 @@ from six import PY2
 from mock import patch
 from nose.tools import assert_in
 import requests
+import numpy as np
 
 from hyperdash import monitor
 from hyperdash import Experiment
@@ -400,6 +401,72 @@ class TestSDK(object):
             for log in expect_logs:
                 assert_in(log, data)
         os.remove(latest_log_file)
+
+    def test_experiment_handles_numpy_numbers(self):
+        nums_to_test = [
+            ("int_", np.int_()),
+            ("intc", np.intc()),
+            ("intp", np.intp()),
+            ("int8", np.int8()),
+            ("int16", np.int16()),
+            ("int32", np.int32()),
+            ("int64", np.int64()),
+            ("uint8", np.uint8()),
+            ("uint16", np.uint16()),
+            ("uint32", np.uint32()),
+            ("uint64", np.uint64()),
+            ("float16", np.float16()),
+            ("float32", np.float32()),
+            ("float64", np.float64()),
+        ]
+        # Make sure the SDK doesn't choke and JSON serialization works
+        exp = Experiment("MNIST")
+        for name, num in nums_to_test:
+            exp.metric("test_metric_{}".format(name), num)
+            exp.param("test_param_{}".format(name), num)
+        exp.end()
+        
+        # Test params match what is expected
+        params_messages = []
+        for msg in server_sdk_messages:
+            payload = msg["payload"]
+            if "params" in payload:
+                params_messages.append(payload)
+
+        expected_params = []
+        for name, num in nums_to_test:
+            obj = {
+                "params": {},
+                "is_internal": False,
+            }
+            obj["params"]["test_param_{}".format(name)] = num
+            obj["is_internal"] = False
+            expected_params.append(obj)
+
+        assert len(expected_params) == len(params_messages)
+        for i, message in enumerate(params_messages):
+            print(message)
+            print(expected_params[i])
+            assert message == expected_params[i]
+
+        # Test metrics match what is expected
+        metrics_messages = []
+        for msg in server_sdk_messages:
+            payload = msg["payload"]
+            if "name" in payload:
+                metrics_messages.append(payload)
+
+        expected_metrics = []
+        for name, num in nums_to_test:
+            expected_metrics.append({
+                "name": "test_metric_{}".format(name),
+                "value": num,
+                "is_internal": False,
+            })
+
+        assert len(expected_metrics) == len(metrics_messages)
+        for i, message in enumerate(metrics_messages):
+            assert message == expected_metrics[i]
         
     def experiment_raises_exceptions(self):
         exception_raised = True

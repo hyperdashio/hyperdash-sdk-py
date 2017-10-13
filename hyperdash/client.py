@@ -36,6 +36,9 @@ class HDClient:
         assert isinstance(name, six.string_types)
         assert isinstance(sample_frequency_per_second, numbers.Real), "sample_frequency_per_second must be a real number."
         assert value is not None and name is not None and sample_frequency_per_second is not None, "value and name and sample_frequency_per_second must not be None."
+        # We've already determined its a real number, but some objects that satisfy the real number
+        # constraint (like numpy numbers) are not JSON serializable unless converted.
+        value = float(value)
 
         current_time = time.time()
         last_seen_at = self._last_seen_metrics.get(name, None)
@@ -61,7 +64,15 @@ class HDClient:
     def _param(self, name, val, log=True, is_internal=False):
         assert isinstance(name, six.string_types), "name must be a string."
         # Make sure its JSON serializable
-        json.dumps(val)
+        try:
+            json.dumps(val)
+        except TypeError:
+            # If its not, see if its a number
+            if isinstance(val, numbers.Real):
+                val = float(val)
+            else:
+            # Otherwise, just convert it to a string
+                val = str(val)
         assert name not in self._seen_params, "hyperparameters should be unique and not reused"
 
         params = {}

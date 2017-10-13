@@ -6,3 +6,4 @@ wheel==0.24.0
 jupyter==1.0.0
 python-slugify==1.2.4
 twine==1.9.1
+numpy==1.13.3
