@@ -244,6 +244,7 @@ class HyperDash:
 
     def print_completion_message(self):
         start_time, end_time = self.runner.get_start_and_end_time()
+        # end_time is not set in the case that the user canceled the run
         if not end_time:
             end_time = datetime.datetime.now()
 
