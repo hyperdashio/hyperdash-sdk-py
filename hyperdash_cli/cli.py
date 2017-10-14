@@ -11,6 +11,7 @@ import sys
 import requests
 
 from six.moves import input
+from six.moves import xrange
 from six.moves.queue import Queue
 from six import PY2
 
