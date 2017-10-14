@@ -11,6 +11,7 @@ import sys
 import requests
 
 from six.moves import input
+from six.moves import xrange
 from six.moves.queue import Queue
 from six import PY2
 
@@ -24,10 +25,6 @@ from hyperdash.monitor import _monitor
 
 from .constants import get_base_url
 
-try:
-    xrange
-except NameError:
-    xrange = range # python 3-compatible xrange
 
 def signup(args=None):
     email = get_input("Email address: ")
