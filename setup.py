@@ -4,7 +4,7 @@ from setuptools import setup
 HYPERDASH_PACKAGE = 'hyperdash'
 CLI_PACKAGE = 'hyperdash_cli'
 
-VERSION_FILE = 'version'
+VERSION_FILE = 'VERSION'
 PYPI_README_FILE = 'PYPI_README.rst'
 
 with open(os.path.join(HYPERDASH_PACKAGE, VERSION_FILE), 'r') as version_file:
