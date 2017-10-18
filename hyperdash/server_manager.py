@@ -59,6 +59,7 @@ class ServerManagerBase():
             if not isinstance(api_key, string_types):
                 self.log_error_once(
                     "custom_api_key_getter returned non-string value")
+            self.api_key = api_key
             return api_key
 
         # Otherwise check for hyperdash.json and HYPERDASH_API_KEY env variable
