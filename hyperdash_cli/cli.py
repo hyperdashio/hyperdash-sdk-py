@@ -150,7 +150,6 @@ def github(args=None):
     def start_server():
         class OAuthRedirectHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             def do_GET(self):
-                # TODO: Error handling
                 parsed_path = urlparse(self.path)
                 query = parse_qs(parsed_path.query)
                 access_token = query["access_token"][0]
@@ -174,6 +173,7 @@ def github(args=None):
     print("Opening browser, please wait. If something goes wrong, press CTRL+C to cancel.")
     server_started_queue.get(block=True)
     # Blocks until browser opens, but doesn't wait for user to close it
+    # TODO: Constantize this
     webbrowser.open_new_tab("https://github.com/login/oauth/authorize?client_id=4793c654216adde7a478&redirect_uri=http://localhost:4040/oauth/github/callback&allow_signup=false&scope=user%20email&state=client_cli:{}".format(port))
 
 
