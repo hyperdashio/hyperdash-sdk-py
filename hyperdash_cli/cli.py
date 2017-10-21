@@ -1,4 +1,5 @@
 import argparse
+from contextlib import closing
 import errno
 from getpass import getpass
 import os
@@ -6,13 +7,18 @@ import subprocess
 import time
 from threading import Thread
 import json
+import socket
 import sys
+import webbrowser
 
 import requests
 
 from six.moves import input
 from six.moves import xrange
 from six.moves.queue import Queue
+from six.moves.urllib.parse import urlparse, parse_qs
+from six.moves import BaseHTTPServer
+
 from six import PY2
 
 from hyperdash.constants import API_NAME_CLI_PIPE
@@ -23,7 +29,7 @@ from hyperdash.constants import get_hyperdash_version
 from hyperdash import monitor
 from hyperdash.monitor import _monitor
 
-from .constants import get_base_url
+from .constants import get_base_url, get_base_http_url
 
 
 def signup(args=None):
@@ -128,6 +134,85 @@ Running the following program:
 
     exp.end()
 
+
+def github(args=None):
+    port = _find_available_port()
+    if not port:
+        print("Github sign in requires an open port, please open port 3000.")
+
+    # Signal when the HTTP server has started
+    server_started_queue = Queue()
+    # Signal when we have the access token
+    access_token_queue = Queue()
+
+    # Server that we will run in the background to accept a post-OAuth redirect from
+    # the Hyperdash server which will contain the user's access token
+    def start_server():
+        class OAuthRedirectHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+            def do_GET(self):
+                # TODO: Error handling
+                parsed_path = urlparse(self.path)
+                query = parse_qs(parsed_path.query)
+                access_token = query["access_token"][0]
+                access_token_queue.put(access_token)
+                # Redirect user's browser
+                self.send_response(301)
+                self.send_header('Location',"{}/{}".format(get_base_http_url(), "/oauth/github/success"))
+                self.end_headers()
+
+        server = BaseHTTPServer.HTTPServer(('localhost', port), OAuthRedirectHandler)
+        server_started_queue.put(True)
+        server.handle_request()
+    
+    server_thread = Thread(target=start_server)
+    # Prevent server_thread from preventing program shutdown
+    server_thread.setDaemon(True)
+    server_thread.start()
+    # Wait until the server has started before opening the user's browser to prevent
+    # a race condition where the Hyperdash server redirects with an access token but
+    # the Python server isn't read yet
+    print("Opening browser, please wait. If something goes wrong, press CTRL+C to cancel.")
+    server_started_queue.get(block=True)
+    # Blocks until browser opens, but doesn't wait for user to close it
+    webbrowser.open_new_tab("https://github.com/login/oauth/authorize?client_id=4793c654216adde7a478&redirect_uri=http://localhost:4040/oauth/github/callback&allow_signup=false&scope=user%20email&state=client_cli:{}".format(port))
+
+
+    print("Waiting for Github OAuth to complete. If something goes wrong, press CTRL+C to cancel.")
+    # Wait for the Hyperdash server to redirect with the access token or an error
+    access_token = access_token_queue.get(block=True)
+    # Use the access token to retrieve the user's API key and store a valid
+    # hyperdash.json file
+    success, default_api_key = _after_access_token_login(access_token)
+    if success:
+        print("Successfully logged in! We also installed: {} as your default API key".format(
+            default_api_key))
+
+
+def _find_available_port():
+    port = None
+    for cur_port in xrange(3000, 3100):
+        is_open = _is_port_open("127.0.0.1", cur_port)
+        if is_open:
+            port = cur_port
+            break
+    return port
+
+
+def _is_port_open(host, port):
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.bind(('127.0.0.1', port))
+        sock.listen(5)
+        sock.close()
+        sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+        sock.bind(('::1', port))
+        sock.listen(5)
+        sock.close()
+    except socket.error as e:
+        return False
+    return True
+
+
 def login(args=None):
     email = get_input("Email address: ")
     password = get_input("Password: ", True)
@@ -155,6 +240,10 @@ def _login(email, password):
             return False, None
 
     access_token = response_body['access_token']
+    return _after_access_token_login(access_token)
+
+
+def _after_access_token_login(access_token):
     config = {'access_token': access_token}
 
     # Add API key if available
@@ -426,6 +515,9 @@ def main():
 
     login_parser = subparsers.add_parser('login')
     login_parser.set_defaults(func=login)
+
+    github_parser = subparsers.add_parser('github')
+    github_parser.set_defaults(func=github)
 
     keys_parser = subparsers.add_parser('keys')
     keys_parser.set_defaults(func=keys)
