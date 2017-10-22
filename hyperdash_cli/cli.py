@@ -16,7 +16,7 @@ import requests
 from six.moves import input
 from six.moves import xrange
 from six.moves.queue import Queue
-from six.moves.urllib.parse import urlparse, parse_qs
+from six.moves.urllib.parse import urlparse, parse_qs, urlencode
 from six.moves import BaseHTTPServer
 
 from six import PY2
@@ -29,7 +29,12 @@ from hyperdash.constants import get_hyperdash_version
 from hyperdash import monitor
 from hyperdash.monitor import _monitor
 
-from .constants import get_base_url, get_base_http_url
+from .constants import get_base_url
+from .constants import get_base_http_url
+from .constants import GITHUB_CLIENT_ID
+from .constants import GITHUB_OAUTH_SCOPES
+from .constants import GITHUB_REDIRECT_URI_PATH
+from .constants import ONE_YEAR_IN_SECONDS
 
 
 def signup(args=None):
@@ -153,11 +158,15 @@ def github(args=None):
                 parsed_path = urlparse(self.path)
                 query = parse_qs(parsed_path.query)
                 access_token = query["access_token"][0]
+                print("Access token auto-detected!")
                 access_token_queue.put(access_token)
                 # Redirect user's browser
                 self.send_response(301)
                 self.send_header('Location',"{}/{}".format(get_base_http_url(), "/oauth/github/success"))
                 self.end_headers()
+            # Silence logs
+            def log_message(self, _format, *args):
+                return
 
         server = BaseHTTPServer.HTTPServer(('localhost', port), OAuthRedirectHandler)
         server_started_queue.put(True)
@@ -167,19 +176,51 @@ def github(args=None):
     # Prevent server_thread from preventing program shutdown
     server_thread.setDaemon(True)
     server_thread.start()
-    # Wait until the server has started before opening the user's browser to prevent
-    # a race condition where the Hyperdash server redirects with an access token but
-    # the Python server isn't read yet
+
+    url = "https://github.com/login/oauth/authorize"
+    auto_login_query_args = {
+        "client_id": GITHUB_CLIENT_ID,
+        "redirect_uri": "{}/{}".format(get_base_http_url(), GITHUB_REDIRECT_URI_PATH),
+        "allow_signup": True,
+        "scope": " ".join(GITHUB_OAUTH_SCOPES),
+        "state": "client_cli_auto:{}".format(port),
+    }
+    auto_login_url = "{}?{}".format(url, urlencode(auto_login_query_args))
+    
+    # Copy
+    manual_login_query_args = dict(auto_login_query_args)
+    manual_login_query_args["state"] = "client_cli_manual"
+    manual_login_url = "{}?{}".format(url, urlencode(manual_login_query_args))
+
     print("Opening browser, please wait. If something goes wrong, press CTRL+C to cancel.")
-    server_started_queue.get(block=True)
+    print("\033[1m SSH'd into a remote machine, or just don't have access to a browser? Open this link in any browser and then copy/paste the provided access token: \033[4m{}\033[0m \033[0m".format(manual_login_url))
+
+    copy_pasted_started_queue = Queue()
+    def copy_paste():
+        print("Waiting for Github OAuth to complete. If something goes wrong, press CTRL+C to cancel.")        
+        copy_pasted_started_queue.put(True)
+        access_token = get_input("Access token: ")
+        access_token_queue.put(access_token)
+            
+    copy_paste_thread = Thread(target=copy_paste)
+    # Prevent copy_paste_thread from preventing program shutdown
+    copy_paste_thread.setDaemon(True)
+    copy_paste_thread.start()
+
+    # Wait until the server and user input threads have started before opening the
+    # user's browser to prevent a race condition where the Hyperdash server
+    # redirects with an access token but the Python server isn't ready yet.
+    # 
+    # Also, we set the timeout to ONE_YEAR_IN_SECONDS because without a timeout,
+    # the .get() call on the queue can not be interrupted with CTRL+C.
+    server_started_queue.get(block=True, timeout=ONE_YEAR_IN_SECONDS)
+    copy_pasted_started_queue.get(block=True, timeout=ONE_YEAR_IN_SECONDS)
     # Blocks until browser opens, but doesn't wait for user to close it
-    # TODO: Constantize this
-    webbrowser.open_new_tab("https://github.com/login/oauth/authorize?client_id=4793c654216adde7a478&redirect_uri=http://localhost:4040/oauth/github/callback&allow_signup=false&scope=user%20email&state=client_cli:{}".format(port))
+    webbrowser.open_new_tab(auto_login_url)
 
 
-    print("Waiting for Github OAuth to complete. If something goes wrong, press CTRL+C to cancel.")
     # Wait for the Hyperdash server to redirect with the access token or an error
-    access_token = access_token_queue.get(block=True)
+    access_token = access_token_queue.get(block=True, timeout=ONE_YEAR_IN_SECONDS)
     # Use the access token to retrieve the user's API key and store a valid
     # hyperdash.json file
     success, default_api_key = _after_access_token_login(access_token)
