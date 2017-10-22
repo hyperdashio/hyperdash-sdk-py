@@ -44,8 +44,8 @@ def signup(args=None):
     print("Trying to sign you up now...")
     try:
         res = post_json("/users", {
-            'email': email,
-            'password': password,
+            "email": email,
+            "password": password,
         })
     except Exception as e:
         print("Sorry we were unable to sign you up, please try again.")
@@ -53,17 +53,17 @@ def signup(args=None):
 
     res_body = res.json()
     if res.status_code != 200:
-        message = res_body.get('message')
+        message = res_body.get("message")
         if message:
             print(message)
             return
 
     print("Congratulations on signing up!")
-    api_key = res_body['api_key']
+    api_key = res_body["api_key"]
     print("Your API key is: {}".format(api_key))
 
     write_hyperdash_json_file({
-        'api_key': api_key
+        "api_key": api_key
     })
     print("""
         We stored your API key in {}
@@ -157,18 +157,21 @@ def github(args=None):
             def do_GET(self):
                 parsed_path = urlparse(self.path)
                 query = parse_qs(parsed_path.query)
-                access_token = query["access_token"][0]
+                access_token = query["access_token"][0] if "access_token" in query else None
+                if not access_token:
+                    print("Something went wrong! Please try again.")
+                    sys.exit()
                 print("Access token auto-detected!")
                 access_token_queue.put(access_token)
                 # Redirect user's browser
                 self.send_response(301)
-                self.send_header('Location',"{}/{}".format(get_base_http_url(), "/oauth/github/success"))
+                self.send_header("Location","{}/{}".format(get_base_http_url(), "/oauth/github/success"))
                 self.end_headers()
             # Silence logs
             def log_message(self, _format, *args):
                 return
 
-        server = BaseHTTPServer.HTTPServer(('localhost', port), OAuthRedirectHandler)
+        server = BaseHTTPServer.HTTPServer(("127.0.0.1", port), OAuthRedirectHandler)
         server_started_queue.put(True)
         server.handle_request()
     
@@ -197,7 +200,8 @@ def github(args=None):
 
     copy_pasted_started_queue = Queue()
     def copy_paste():
-        print("Waiting for Github OAuth to complete. If something goes wrong, press CTRL+C to cancel.")        
+        print("Waiting for Github OAuth to complete.")
+        print("If something goes wrong, press CTRL+C to cancel.")        
         copy_pasted_started_queue.put(True)
         access_token = get_input("Access token: ")
         access_token_queue.put(access_token)
@@ -230,23 +234,17 @@ def github(args=None):
 
 
 def _find_available_port():
-    port = None
-    for cur_port in xrange(3000, 3100):
+    for cur_port in xrange(3000, 9000):
         is_open = _is_port_open("127.0.0.1", cur_port)
         if is_open:
-            port = cur_port
-            break
-    return port
+            return cur_port
+    return None
 
 
 def _is_port_open(host, port):
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.bind(('127.0.0.1', port))
-        sock.listen(5)
-        sock.close()
-        sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
-        sock.bind(('::1', port))
+        sock.bind((host, port))
         sock.listen(5)
         sock.close()
     except socket.error as e:
@@ -266,8 +264,8 @@ def login(args=None):
 def _login(email, password):
     try:
         response = post_json("/sessions", {
-            'email': email,
-            'password': password,
+            "email": email,
+            "password": password,
         })
     except Exception as e:
         print("Sorry we were unable to log you in, please try again.")
@@ -275,23 +273,23 @@ def _login(email, password):
 
     response_body = response.json()
     if response.status_code != 200:
-        message = response_body.get('message')
+        message = response_body.get("message")
         if message:
             print(message)
             return False, None
 
-    access_token = response_body['access_token']
+    access_token = response_body["access_token"]
     return _after_access_token_login(access_token)
 
 
 def _after_access_token_login(access_token):
-    config = {'access_token': access_token}
+    config = {"access_token": access_token}
 
     # Add API key if available
     api_keys = get_api_keys(access_token)
     if api_keys and len(api_keys) > 0:
         default_api_key = api_keys[0]
-        config['api_key'] = default_api_key
+        config["api_key"] = default_api_key
     else:
         print("Login failure: We were unable to retrieve your default API key.")
         return False, None
@@ -303,15 +301,15 @@ def _after_access_token_login(access_token):
 def get_api_keys(access_token):
     try:
         res = get_json("/users/api_keys", headers={
-            'authorization': access_token,
+            "authorization": access_token,
         })
         res_json = res.json()
         if res.status_code != 200:
-            message = res_json.get('message')
+            message = res_json.get("message")
             if message:
                 print(message)
             return None
-        return res_json.get('api_keys')
+        return res_json.get("api_keys")
     except Exception as e:
         print("Sorry we were unable to retrieve your API keys, please try again.")
         return None
@@ -350,7 +348,7 @@ def run(args):
         subprocess_env["PYTHONUNBUFFERED"] = "1"
         # Spawn a subprocess with the user's command
         p = subprocess.Popen(
-            ' '.join(args.args),
+            " ".join(args.args),
             shell=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -417,11 +415,11 @@ def _gen_tokens_from_stream(stream):
         if not b:
             if buf:
                 # Yield what we have
-                yield b''.join(buf)
+                yield b"".join(buf)
             return
         # If its whitespace, yield what we have including the whitespace
         if b.isspace() and buf:
-            yield b''.join(buf) + b
+            yield b"".join(buf) + b
             buf = []
         # Otherwise grow the buf
         else:
@@ -470,11 +468,11 @@ def write_hyperdash_json_file(hyperdash_json):
                 raise
     try:
         # Open for read/write, but will not create file
-        with open(path, 'r+') as f:
+        with open(path, "r+") as f:
             write_hyperdash_json_helper(f, hyperdash_json)
     except IOError:
         # Open for read/write but will truncate if it already exists
-        with open(path, 'w+') as f:
+        with open(path, "w+") as f:
             write_hyperdash_json_helper(f, hyperdash_json)
 
 
@@ -511,7 +509,7 @@ def get_access_token_from_file():
         except IOError:
             continue
 
-    return parsed.get('access_token') if parsed else None
+    return parsed.get("access_token") if parsed else None
 
 
 def get_access_token_from_env():
@@ -531,7 +529,7 @@ def get_api_key_from_file():
         except IOError:
             continue
 
-    return parsed.get('api_key') if parsed else None
+    return parsed.get("api_key") if parsed else None
 
 
 def get_api_key_from_env():
@@ -539,40 +537,40 @@ def get_api_key_from_env():
 
 
 def main():
-    parser = argparse.ArgumentParser(description='The HyperDash SDK')
+    parser = argparse.ArgumentParser(description="The HyperDash SDK")
     subparsers = parser.add_subparsers(
-        title='subcommands',
-        description='valid subcommands',
-        help='additional help',
-        dest='subcommand'
+        title="subcommands",
+        description="valid subcommands",
+        help="additional help",
+        dest="subcommand"
     )
     subparsers.required = True
 
-    signup_parser = subparsers.add_parser('signup')
+    signup_parser = subparsers.add_parser("signup")
     signup_parser.set_defaults(func=signup)
 
-    demo_parser = subparsers.add_parser('demo')
+    demo_parser = subparsers.add_parser("demo")
     demo_parser.set_defaults(func=demo)
 
-    login_parser = subparsers.add_parser('login')
+    login_parser = subparsers.add_parser("login")
     login_parser.set_defaults(func=login)
 
-    github_parser = subparsers.add_parser('github')
+    github_parser = subparsers.add_parser("github")
     github_parser.set_defaults(func=github)
 
-    keys_parser = subparsers.add_parser('keys')
+    keys_parser = subparsers.add_parser("keys")
     keys_parser.set_defaults(func=keys)
 
-    run_parser = subparsers.add_parser('run')
-    run_parser.add_argument('--name', '-name', '--n', '-n', required=True)
-    run_parser.add_argument('args', nargs=argparse.REMAINDER)
+    run_parser = subparsers.add_parser("run")
+    run_parser.add_argument("--name", "-name", "--n", "-n", required=True)
+    run_parser.add_argument("args", nargs=argparse.REMAINDER)
     run_parser.set_defaults(func=run)
 
-    pipe_parser = subparsers.add_parser('pipe')
-    pipe_parser.add_argument('--name', '-name', '--n', '-n', required=True)
+    pipe_parser = subparsers.add_parser("pipe")
+    pipe_parser.add_argument("--name", "-name", "--n", "-n", required=True)
     pipe_parser.set_defaults(func=pipe)
 
-    keys_parser = subparsers.add_parser('version')
+    keys_parser = subparsers.add_parser("version")
     keys_parser.set_defaults(func=version)
 
     args = parser.parse_args()
