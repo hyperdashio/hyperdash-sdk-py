@@ -9,6 +9,8 @@ GITHUB_REDIRECT_URI_PATH = "oauth/github/callback"
 
 ONE_YEAR_IN_SECONDS = 365 * 24 * 60 * 60
 
+LOOPBACK = "127.0.0.1"
+
 
 def get_base_http_url():
     return six.text_type(os.environ.get(

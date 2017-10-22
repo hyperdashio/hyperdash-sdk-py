@@ -35,6 +35,7 @@ from .constants import GITHUB_CLIENT_ID
 from .constants import GITHUB_OAUTH_SCOPES
 from .constants import GITHUB_REDIRECT_URI_PATH
 from .constants import ONE_YEAR_IN_SECONDS
+from .constants import LOOPBACK
 
 
 def signup(args=None):
@@ -171,7 +172,7 @@ def github(args=None):
             def log_message(self, _format, *args):
                 return
 
-        server = BaseHTTPServer.HTTPServer(("127.0.0.1", port), OAuthRedirectHandler)
+        server = BaseHTTPServer.HTTPServer((LOOPBACK, port), OAuthRedirectHandler)
         server_started_queue.put(True)
         server.handle_request()
     
@@ -235,7 +236,7 @@ def github(args=None):
 
 def _find_available_port():
     for cur_port in xrange(3000, 9000):
-        is_open = _is_port_open("127.0.0.1", cur_port)
+        is_open = _is_port_open(LOOPBACK, cur_port)
         if is_open:
             return cur_port
     return None
