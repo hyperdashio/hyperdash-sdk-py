@@ -255,7 +255,7 @@ def _is_port_open(host, port):
         sock.bind((host, port))
         sock.listen(5)
         sock.close()
-    except socket.error, socket.timeout:
+    except (socket.error, socket.timeout):
         return False
     return True
 
