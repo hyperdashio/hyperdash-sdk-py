@@ -161,6 +161,26 @@ class TestCLI(object):
         for expected in expected_output:
             assert_in(expected, fake_out.getvalue())
 
+    # This test is fairly primitive, but its enough to verify python2/3 compatibility
+    def test_github(self):
+        vals = {
+            ("Access token: ", ): DEFAULT_ACCESS_TOKEN,
+        }
+
+        def side_effect(*args):
+            return vals[args]
+
+        with patch('hyperdash_cli.cli.get_input', Mock(side_effect=side_effect)), patch('sys.stdout', new=StringIO()) as fake_out:
+            hyperdash_cli.github()
+
+        expected_output = [
+            "Successfully logged in!",
+            "We also installed: {} as your default API key".format(
+                DEFAULT_API_KEY),
+        ]
+        for expected in expected_output:
+            assert_in(expected, fake_out.getvalue())
+
     def test_keys(self):
         with patch('hyperdash_cli.cli.get_access_token_from_file', Mock(return_value=DEFAULT_ACCESS_TOKEN)), patch('sys.stdout', new=StringIO()) as fake_out:
             hyperdash_cli.keys()
