@@ -199,32 +199,38 @@ def github(args=None):
     print("Opening browser, please wait. If something goes wrong, press CTRL+C to cancel.")
     print("\033[1m SSH'd into a remote machine, or just don't have access to a browser? Open this link in any browser and then copy/paste the provided access token: \033[4m{}\033[0m \033[0m".format(manual_login_url))
 
-    copy_pasted_started_queue = Queue()
-    def copy_paste():
+    # If the user doesn't have programatic access to a browser, then we need to give them
+    # the option of opening a URL manually and copy-pasting the access token into the CLI.
+    # We spin this up in a separate thread so that it doesn't block the happy path where
+    # the browser is available and we're able to auto-detect the access token
+    manual_entry_thread_started_queue = Queue()
+    def manual_entry():
         print("Waiting for Github OAuth to complete.")
         print("If something goes wrong, press CTRL+C to cancel.")        
-        copy_pasted_started_queue.put(True)
+        manual_entry_thread_started_queue.put(True)
         access_token = get_input("Access token: ")
         access_token_queue.put(access_token)
             
-    copy_paste_thread = Thread(target=copy_paste)
-    # Prevent copy_paste_thread from preventing program shutdown
-    copy_paste_thread.setDaemon(True)
-    copy_paste_thread.start()
+    manual_entry_thread = Thread(target=manual_entry)
+    # Prevent manual_entry_thread from preventing program shutdown
+    manual_entry_thread.setDaemon(True)
+    manual_entry_thread.start()
 
-    # Wait until the server and user input threads have started before opening the
+    # Wait until the server and manual entry threads have started before opening the
     # user's browser to prevent a race condition where the Hyperdash server
     # redirects with an access token but the Python server isn't ready yet.
     # 
     # Also, we set the timeout to ONE_YEAR_IN_SECONDS because without a timeout,
     # the .get() call on the queue can not be interrupted with CTRL+C.
     server_started_queue.get(block=True, timeout=ONE_YEAR_IN_SECONDS)
-    copy_pasted_started_queue.get(block=True, timeout=ONE_YEAR_IN_SECONDS)
+    manual_entry_thread_started_queue.get(block=True, timeout=ONE_YEAR_IN_SECONDS)
     # Blocks until browser opens, but doesn't wait for user to close it
     webbrowser.open_new_tab(auto_login_url)
 
 
-    # Wait for the Hyperdash server to redirect with the access token or an error
+    # Wait for the Hyperdash server to redirect with the access token to our embedded
+    # server, or for the user to manually enter an access token. Whichever happens
+    # first.
     access_token = access_token_queue.get(block=True, timeout=ONE_YEAR_IN_SECONDS)
     # Use the access token to retrieve the user's API key and store a valid
     # hyperdash.json file
