@@ -251,10 +251,11 @@ def _find_available_port():
 def _is_port_open(host, port):
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(2)
         sock.bind((host, port))
         sock.listen(5)
         sock.close()
-    except socket.error as e:
+    except socket.error, socket.timeout:
         return False
     return True
 
