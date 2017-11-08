@@ -31,9 +31,7 @@ from hyperdash.monitor import _monitor
 
 from .constants import get_base_url
 from .constants import get_base_http_url
-from .constants import GITHUB_CLIENT_ID
-from .constants import GITHUB_OAUTH_SCOPES
-from .constants import GITHUB_REDIRECT_URI_PATH
+from .constants import GITHUB_OAUTH_START
 from .constants import ONE_YEAR_IN_SECONDS
 from .constants import LOOPBACK
 
@@ -195,7 +193,7 @@ def github(args=None):
     server_thread.setDaemon(True)
     server_thread.start()
 
-    url = "https://hyperdash.io/oauth/github/start"
+    url = "{}/{}".format(get_base_http_url(), GITHUB_OAUTH_START)
     auto_login_query_args = {
         "state": "client_cli_auto:{}".format(port),
     }
@@ -286,6 +284,7 @@ def login(args=None):
     
     if args.github:
         github(args)
+        return
 
 
 def _login(email, password):

@@ -3,9 +3,7 @@ import os
 import six
 
 
-GITHUB_CLIENT_ID = "4793c654216adde7a478"
-GITHUB_OAUTH_SCOPES = ["user:email"]
-GITHUB_REDIRECT_URI_PATH = "oauth/github/callback"
+GITHUB_OAUTH_START = "oauth/github/start"
 
 ONE_YEAR_IN_SECONDS = 365 * 24 * 60 * 60
 
