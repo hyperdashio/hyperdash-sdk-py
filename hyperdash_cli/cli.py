@@ -45,9 +45,9 @@ def signup(args=None):
     print("Trying to sign you up now...")
     try:
         res = post_json("/users", {
-            'email': email,
-            'password': password,
-            'origin': 'mobile'
+            "email": email,
+            "password": password,
+            "origin": "sdk"
         })
     except Exception as e:
         print("Sorry we were unable to sign you up, please try again.")
