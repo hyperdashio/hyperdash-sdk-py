@@ -31,14 +31,26 @@ from hyperdash.monitor import _monitor
 
 from .constants import get_base_url
 from .constants import get_base_http_url
-from .constants import GITHUB_CLIENT_ID
-from .constants import GITHUB_OAUTH_SCOPES
-from .constants import GITHUB_REDIRECT_URI_PATH
+from .constants import GITHUB_OAUTH_START
 from .constants import ONE_YEAR_IN_SECONDS
 from .constants import LOOPBACK
 
 
 def signup(args=None):
+    if not (args.email or args.github):
+        print("To signup with your email address, run `hd signup --email`. Alternatively, you can signup via Github by running `hd signup --github")
+        return
+
+    if args.email:
+        _signup_email(args)
+        return
+    
+    if args.github:
+        github(args)
+        return
+
+
+def _signup_email(args):
     email = get_input("Email address: ")
     password = get_input("Password (8 characters or more): ", True)
 
@@ -182,12 +194,8 @@ def github(args=None):
     server_thread.setDaemon(True)
     server_thread.start()
 
-    url = "https://github.com/login/oauth/authorize"
+    url = "{}/{}".format(get_base_http_url(), GITHUB_OAUTH_START)
     auto_login_query_args = {
-        "client_id": GITHUB_CLIENT_ID,
-        "redirect_uri": "{}/{}".format(get_base_http_url(), GITHUB_REDIRECT_URI_PATH),
-        "allow_signup": True,
-        "scope": " ".join(GITHUB_OAUTH_SCOPES),
         "state": "client_cli_auto:{}".format(port),
     }
     auto_login_url = "{}?{}".format(url, urlencode(auto_login_query_args))
@@ -262,12 +270,22 @@ def _is_port_open(host, port):
 
 
 def login(args=None):
-    email = get_input("Email address: ")
-    password = get_input("Password: ", True)
-    success, default_api_key = _login(email, password)
-    if success:
-        print("Successfully logged in! We also installed: {} as your default API key".format(
-            default_api_key))
+    if not (args.email or args.github):
+        print("To login with your email address, run `hd login --email`. Alternatively, you can login via Github by running `hd login --github")
+        return
+
+    if args.email:
+        email = get_input("Email address: ")
+        password = get_input("Password: ", True)
+        success, default_api_key = _login(email, password)
+        if success:
+            print("Successfully logged in! We also installed: {} as your default API key".format(
+                default_api_key))
+        return
+    
+    if args.github:
+        github(args)
+        return
 
 
 def _login(email, password):
@@ -556,12 +574,16 @@ def main():
     subparsers.required = True
 
     signup_parser = subparsers.add_parser("signup")
+    signup_parser.add_argument("--email", "-email", required=False, action='store_true')
+    signup_parser.add_argument("--github", "-github", required=False, action='store_true')
     signup_parser.set_defaults(func=signup)
 
     demo_parser = subparsers.add_parser("demo")
     demo_parser.set_defaults(func=demo)
 
     login_parser = subparsers.add_parser("login")
+    login_parser.add_argument("--email", "-email", required=False, action='store_true')
+    login_parser.add_argument("--github", "-github", required=False, action='store_true')
     login_parser.set_defaults(func=login)
 
     github_parser = subparsers.add_parser("github")

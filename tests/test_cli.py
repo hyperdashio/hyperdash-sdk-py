@@ -128,7 +128,7 @@ class TestCLI(object):
             return vals[args]
 
         with patch('hyperdash_cli.cli.get_input', Mock(side_effect=side_effect)), patch('sys.stdout', new=StringIO()) as fake_out:
-            hyperdash_cli.signup()
+            hyperdash_cli.signup(argparse.Namespace(email=True))
 
         expected_output = [
             "Trying to sign you up now...",
@@ -151,7 +151,7 @@ class TestCLI(object):
             return vals[args]
 
         with patch('hyperdash_cli.cli.get_input', Mock(side_effect=side_effect)), patch('sys.stdout', new=StringIO()) as fake_out:
-            hyperdash_cli.login()
+            hyperdash_cli.login(argparse.Namespace(email=True))
 
         expected_output = [
             "Successfully logged in!",
