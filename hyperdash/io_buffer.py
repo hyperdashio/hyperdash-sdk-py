@@ -41,3 +41,7 @@ class IOBuffer:
 
     def release(self):
         self.lock.release()
+
+    # Implement the sys.stdout interface
+    def isatty(self):
+        return True
