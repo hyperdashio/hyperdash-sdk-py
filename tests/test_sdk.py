@@ -407,15 +407,10 @@ class TestSDK(object):
             exp = Experiment("MNIST")
             keras_cb = exp.callbacks.keras
             keras_cb.on_epoch_end(0, {"val_acc": 1, "val_loss": 2})
-            keras_cb.on_epoch_end(0, {"val_acc": 2, "val_loss": 4})
+            # Sleep 1 second due to client sampling
+            time.sleep(1)
+            keras_cb.on_epoch_end(1, {"val_acc": 3, "val_loss": 4})
             exp.end()
-        
-        # Test params match what is expected
-        params_messages = []
-        for msg in server_sdk_messages:
-            payload = msg["payload"]
-            if "params" in payload:
-                params_messages.append(payload)
 
         # Test metrics match what is expected
         metrics_messages = []
@@ -423,13 +418,12 @@ class TestSDK(object):
             payload = msg["payload"]
             if "name" in payload:
                 metrics_messages.append(payload)
-
         expect_metrics = [
-            {"is_internal": False, "name": "val_acc", "value": 0},
-            {"is_internal": False, "name": "val_loss", "value": 1},
-            {"is_internal": False, "name": "val_acc", "value": 2},
-            {"is_internal": False, "name": "val_loss", "value": 3},
-       ]
+            {"is_internal": False, "name": "val_acc", "value": 1},
+            {"is_internal": False, "name": "val_loss", "value": 2},
+            {"is_internal": False, "name": "val_acc", "value": 3},
+            {"is_internal": False, "name": "val_loss", "value": 4},
+        ]
         assert len(expect_metrics) == len(metrics_messages)
         for i, message in enumerate(metrics_messages):
             assert message == expect_metrics[i]

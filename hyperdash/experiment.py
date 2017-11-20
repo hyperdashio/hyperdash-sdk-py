@@ -20,43 +20,13 @@ from .utils import get_logger
 # Python 2/3 compatibility
 __metaclass__ = type
 
-"""
-    No-op class for reusing CodeRunner architecture
-"""
-
-# Check if Keras is installed and fallback gracefully
-try:
-    from keras.callbacks import Callback as KerasCallback
-    # TODO: Decide if we want to handle the additional callbacks:
-    # TODO: Possibly move this to a separate file so we can still
-    #       do the conditional import without shoving it at the
-    #       top of this file
-    # 1) on_epoch_begin
-    # 2) on_batch_begin
-    # 3) on_batch_end
-    # 4) on_train_begin
-    # 5) on_train_end
-    class _KerasCallback(KerasCallback):
-        """_KerasCallback implement KerasCallback using an injected Experiment."""
-        def __init__(self, exp):
-            super(_KerasCallback, self).__init__()
-            self._exp = exp
-        
-        def on_epoch_end(self, epoch, logs={}):
-            val_acc = logs.get("val_acc")
-            val_loss = logs.get("val_loss")
-
-            if val_acc is not None:
-                self._exp.metric("val_acc", val_acc)
-            if val_loss is not None:
-                self._exp.metric("val_loss", val_loss)
-except ImportError:
-    KerasCallback = None
-
 KERAS = "keras"
 
 
 class ExperimentRunner:
+    """
+        No-op class for reusing CodeRunner architecture
+    """
     def __init__(
         self,
         done=False,
@@ -206,9 +176,51 @@ class Callbacks:
     def __init__(self, exp):
         self._exp = exp
         self._callbacks = {}
-        if KerasCallback:
-            self._callbacks[KERAS] = _KerasCallback(exp)
 
     @property
     def keras(self):
-        return self._callbacks.get(KERAS)
+        """
+        Returns an object that implements the Keras Callback interface.
+
+        This method initializes the Keras callback lazily to to prevent
+        any possible import issues from affecting users who don't use it.
+        """
+        cb = self._callbacks.get(KERAS)
+        # Keras is not importable
+        if cb == False:
+            return None
+        # If this is the first time, try and import Keras
+        if not cb:
+            # Check if Keras is installed and fallback gracefully
+            try:
+                from keras.callbacks import Callback as KerasCallback
+                class _KerasCallback(KerasCallback):
+                    """_KerasCallback implement KerasCallback using an injected Experiment.
+                    
+                    # TODO: Decide if we want to handle the additional callbacks:
+                    # 1) on_epoch_begin
+                    # 2) on_batch_begin
+                    # 3) on_batch_end
+                    # 4) on_train_begin
+                    # 5) on_train_end
+                    """
+                    def __init__(self, exp):
+                        super(_KerasCallback, self).__init__()
+                        self._exp = exp
+                    
+                    def on_epoch_end(self, epoch, logs={}):
+                        val_acc = logs.get("val_acc")
+                        val_loss = logs.get("val_loss")
+
+                        if val_acc is not None:
+                            self._exp.metric("val_acc", val_acc)
+                        if val_loss is not None:
+                            self._exp.metric("val_loss", val_loss)
+                cb = _KerasCallback(self._exp)
+                self._callbacks[KERAS] = cb
+                return cb
+            except ImportError:
+                # Mark Keras as unimportable for future calls                
+                self._callbacks[KERAS] = False
+                return None
+        return cb
