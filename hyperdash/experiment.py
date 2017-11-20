@@ -183,7 +183,10 @@ class Callbacks:
         Returns an object that implements the Keras Callback interface.
 
         This method initializes the Keras callback lazily to to prevent
-        any possible import issues from affecting users who don't use it.
+        any possible import issues from affecting users who don't use it,
+        as well as prevent it from importing Keras/tensorflow and all of
+        their accompanying baggage unnecessarily in the case that they
+        happened to be installed, but the user is not using them.
         """
         cb = self._callbacks.get(KERAS)
         # Keras is not importable
