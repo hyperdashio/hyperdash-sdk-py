@@ -9,6 +9,6 @@ twine==1.9.1
 numpy==1.13.3
 keras==2.1.1
 # Required for Keras
-np_utils=0.5.3.4
+np_utils==0.5.3.4
 # Required for Keras
-tensorflow=1.4.0
+tensorflow==1.4.0
