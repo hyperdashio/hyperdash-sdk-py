@@ -24,6 +24,38 @@ __metaclass__ = type
     No-op class for reusing CodeRunner architecture
 """
 
+# Check if Keras is installed and fallback gracefully
+try:
+    from keras.callbacks import Callback as KerasCallback
+    # TODO: Decide if we want to handle the additional callbacks:
+    # TODO: Possibly move this to a separate file so we can still
+    #       do the conditional import without shoving it at the
+    #       top of this file
+    # 1) on_epoch_begin
+    # 2) on_batch_begin
+    # 3) on_batch_end
+    # 4) on_train_begin
+    # 5) on_train_end
+    class _KerasCallback(KerasCallback):
+        """_KerasCallback implement KerasCallback using an injected Experiment."""
+        def __init__(self, exp):
+            super(_KerasCallback, self).__init__()
+            self._exp = exp
+        
+        def on_epoch_end(self, epoch, logs={}):
+            val_acc = logs.get("val_acc")
+            val_loss = logs.get("val_loss")
+
+            if val_acc is not None:
+                self.metric("val_acc", val_acc)
+            if val_loss is not None:
+                self.metric("val_loss", val_loss)
+except ImportError:
+    KerasCallback = None
+
+KERAS = "keras"
+
+
 class ExperimentRunner:
     def __init__(
         self,
@@ -81,6 +113,7 @@ class Experiment:
             2) capture_io: Should save stdout/stderror to log file and upload it to Hyperdash.
         """
         self.model_name = model_name
+        self.callbacks = Callbacks(self)
         self._experiment_runner = ExperimentRunner()
         self.lock = Lock()
 
@@ -110,6 +143,7 @@ class Experiment:
             self._logger,
             self._experiment_runner,
         )
+
         # Channel to update once experiment has finished running
         # Syncs with the seperate hyperdash messaging loop thread
         self.done_chan = Queue()
@@ -161,3 +195,20 @@ class Experiment:
     """
     def log(self, string):
         self._logger.info(string)
+
+
+class Callbacks:
+    """Callbacks is a container class for 3rd-party library callbacks.
+    
+    An instance of Experiment is injected so that the callbacks can emit
+    metrics/logs/parameters on behalf of an experiment.
+    """
+    def __init__(self, exp):
+        self._exp = exp
+        self._callbacks = {}
+        if KerasCallback:
+            self._callbacks[KERAS] = _KerasCallback(exp)
+
+    @property
+    def keras(self):
+        return self._callbacks.get(KERAS)
