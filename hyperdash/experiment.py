@@ -47,9 +47,9 @@ try:
             val_loss = logs.get("val_loss")
 
             if val_acc is not None:
-                self.metric("val_acc", val_acc)
+                self._exp.metric("val_acc", val_acc)
             if val_loss is not None:
-                self.metric("val_loss", val_loss)
+                self._exp.metric("val_loss", val_loss)
 except ImportError:
     KerasCallback = None
 
