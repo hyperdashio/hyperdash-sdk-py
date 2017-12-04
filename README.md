@@ -44,7 +44,7 @@ hd run -n "Hotdog CNN" python hotdog.py
 ```
 Or use pipe:
 ```bash
-./catsdogs.sh | hd pipe
+./catsdogs.sh | hd pipe -n "Hotdog CNN"
 ```
 In Jupyter:
 
