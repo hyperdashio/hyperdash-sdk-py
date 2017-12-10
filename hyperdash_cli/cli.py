@@ -37,8 +37,6 @@ from .constants import GITHUB_OAUTH_START
 from .constants import ONE_YEAR_IN_SECONDS
 from .constants import LOOPBACK
 
-from .logs import LogParser
-
 
 def signup(args=None):
     if not (args.email or args.github):
@@ -548,7 +546,6 @@ def _gen_tokens_from_stream(stream):
 
 def _connect_streams(in_stream, out_stream, hd_client):
     """Connects two streams and blocks until the input stream is closed."""
-    log_parser = LogParser(hd_client)
     for data in _gen_tokens_from_stream(in_stream):
         # In PY2 data is str, in PY3 its bytes
         if PY2:
@@ -556,7 +553,6 @@ def _connect_streams(in_stream, out_stream, hd_client):
         else:
             token = data.decode("utf-8", "ignore")
         out_stream.write(token)
-        log_parser.handle_token(token)
 
 
 def version(args=None):
