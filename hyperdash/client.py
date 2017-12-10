@@ -102,8 +102,8 @@ class HDClient:
         while i < n:
             if log:
                 self.logger.info("| Iteration {} of {} |".format(i, n - 1))
-            self._metric("hd_iter_{}".format(iter_num),
-                         i, log=False, is_internal=True)
+            self._metric(
+                "hd_iter_{}".format(iter_num), time.time(), i, log=False, is_internal=True)
             yield i
             i += 1
 
