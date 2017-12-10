@@ -480,10 +480,10 @@ def run(args):
         # stdout/stderr respectively (which have been redirected by
         # the monitor decorator)
         def stdout_loop():
-            _connect_streams(p.stdout, sys.stdout, exp)
+            _connect_streams(p.stdout, sys.stdout)
 
         def stderr_loop():
-            _connect_streams(p.stderr, sys.stderr, exp)
+            _connect_streams(p.stderr, sys.stderr)
 
         stdout_thread = Thread(target=stdout_loop)
         stderr_thread = Thread(target=stderr_loop)
@@ -544,7 +544,7 @@ def _gen_tokens_from_stream(stream):
             buf.append(b)
 
 
-def _connect_streams(in_stream, out_stream, hd_client):
+def _connect_streams(in_stream, out_stream):
     """Connects two streams and blocks until the input stream is closed."""
     for data in _gen_tokens_from_stream(in_stream):
         # In PY2 data is str, in PY3 its bytes
