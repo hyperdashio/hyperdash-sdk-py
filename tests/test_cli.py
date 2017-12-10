@@ -316,6 +316,8 @@ class TestCLI(object):
 
         for i, message in enumerate(server_sdk_messages):
             if message['type'] == 'metric':
+                print(message['payload'])
+                print(expected_metrics[i]['payload'])
                 assert message['payload'] == expected_metrics[i]['payload']
         
         # Make sure correct API name / version headers are sent
