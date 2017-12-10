@@ -402,6 +402,35 @@ class TestSDK(object):
                 assert_in(log, data)
         os.remove(latest_log_file)
 
+    def test_experiment_keras_callback(self):
+        with patch("sys.stdout", new=StringIO()) as faked_out:
+            exp = Experiment("MNIST")
+            keras_cb = exp.callbacks.keras
+            keras_cb.on_epoch_end(0, {"val_acc": 1, "val_loss": 2})
+            # Sleep 1 second due to client sampling
+            time.sleep(1)
+            keras_cb.on_epoch_end(1, {"val_acc": 3, "val_loss": 4})
+            exp.end()
+
+        # Test metrics match what is expected
+        metrics_messages = []
+        for msg in server_sdk_messages:
+            payload = msg["payload"]
+            if "name" in payload:
+                metrics_messages.append(payload)
+        expect_metrics = [
+            {"is_internal": False, "name": "val_acc", "value": 1},
+            {"is_internal": False, "name": "val_loss", "value": 2},
+            {"is_internal": False, "name": "val_acc", "value": 3},
+            {"is_internal": False, "name": "val_loss", "value": 4},
+        ]
+        assert len(expect_metrics) == len(metrics_messages)
+        for i, message in enumerate(metrics_messages):
+            assert message == expect_metrics[i]
+        
+        captured_out = faked_out.getvalue()
+        assert "error" not in captured_out
+
     def test_experiment_handles_numpy_numbers(self):
         nums_to_test = [
             ("int_", np.int_()),

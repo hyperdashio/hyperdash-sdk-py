@@ -7,3 +7,8 @@ jupyter==1.0.0
 python-slugify==1.2.4
 twine==1.9.1
 numpy==1.13.3
+keras==2.1.1
+# Required for Keras
+np_utils==0.5.3.4
+# Required for Keras
+tensorflow==1.4.0
