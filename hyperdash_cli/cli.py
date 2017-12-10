@@ -7,6 +7,7 @@ import subprocess
 import time
 from threading import Thread
 import json
+import signal
 import socket
 import sys
 import webbrowser
@@ -26,6 +27,7 @@ from hyperdash.constants import API_NAME_CLI_RUN
 from hyperdash.constants import get_hyperdash_json_home_path
 from hyperdash.constants import get_hyperdash_json_paths
 from hyperdash.constants import get_hyperdash_version
+from hyperdash.experiment import _TensorboardExperiment
 from hyperdash import monitor
 from hyperdash.monitor import _monitor
 
@@ -34,6 +36,8 @@ from .constants import get_base_http_url
 from .constants import GITHUB_OAUTH_START
 from .constants import ONE_YEAR_IN_SECONDS
 from .constants import LOOPBACK
+
+from .logs import LogParser
 
 
 def signup(args=None):
@@ -365,9 +369,98 @@ def keys(args=None):
     print("\n")
 
 
+def tensorboard(args=None, is_test=False):
+    try:
+        from tensorboard.backend.event_processing import event_multiplexer
+    except ImportError:
+        print("We were unable to import the necessary tensorboard libraries. Please make sure tensorboard is installed in your Python environment and then try again.")
+        return
+
+    # EventMultiplexer is basically a "manager" of different accumulators. Accumulators are responsible
+    # for "accumulating" all the events for a specific run, so we can use the multiplexer to enumerate all
+    # the available accumulators and find the accumulator for the run that we're looking for.
+    multiplexer = event_multiplexer.EventMultiplexer()
+    multiplexer.AddRunsFromDirectory(args.logdir)
+    multiplexer.Reload()
+
+    run_paths = multiplexer.RunPaths()
+
+    # Figure out which run was created most recently
+    # TODO: Allow the user to specify a name
+    latest_run = None
+    latest_run_first_timestamp = None
+    for run in run_paths:
+        first_timestamp = multiplexer.FirstEventTimestamp(run)
+        if latest_run is None:
+            latest_run = run
+            latest_run_first_timestamp = first_timestamp
+        if first_timestamp > latest_run_first_timestamp:
+            latest_run = run
+            latest_run_first_timestamp = first_timestamp
+
+    if latest_run is None:
+        print("No tensorflow runs detected in {}".format(args.logdir))
+        return
+            
+    accumulator = multiplexer.GetAccumulator(latest_run)
+    # Synchronously load all events since last call to Relaod
+    accumulator.Reload()
+
+    tags = accumulator.Tags()
+    scalars = tags['scalars']
+    scalars_str = ', '.join(scalars)
+    print("Auto-detected most recent run is `{}` with the following metrics: {}".format(latest_run, scalars_str))
+
+    exp = _TensorboardExperiment(args.name, capture_io=False)
+    latest_wall_time_by_scalar = {}
+
+    # If the user doesn't want to backfill data, then we set the latest_wall_time for each
+    # scalar to the current time which will prevent us from emitting any metrics that existed
+    # before we started monitoring the folder
+    if not args.backfill:
+        current_time = time.time()
+        for scalar in scalars:
+            latest_wall_time_by_scalar[scalar] = current_time
+
+    # Cleanup on signal so that runs are marked as completed not disconnected
+    def signal_handler(_, __):
+            exp.end()
+            sys.exit(0)
+    signal.signal(signal.SIGINT, signal_handler)
+
+    # TODO: Right now we can't detect when the run is done because there is no "completion"
+    # event in the tensorflow logs so we just run the program inifnitely until the user cancels it.
+    # In theory, we could try and guess when the user's program is done by measuring the amount of time
+    # between datapoints and then waiting until we don't see any new metrics for some multiple of that
+    # period, but for now we don't do that.
+    while True:
+        # Reload will retrieve any new datapoints since the last time we called it
+        accumulator.Reload()
+        tags = accumulator.Tags()
+        # Don't rely on the old scalar tags because new ones may have appeared
+        scalars = tags['scalars']
+        for scalar in scalars:
+            for metric in accumulator.Scalars(scalar):
+                # Skip metrics we've already processed before
+                if latest_wall_time_by_scalar.get(scalar) and metric.wall_time <= latest_wall_time_by_scalar[scalar]:
+                    continue
+                # This is gross, but we need to be able to control the actual timestamp that is being set
+                # in case we're parsing stale Tensorboard files, otherwise the metric timestamps will be completely
+                # off. Also, note that this will do the same 1s sampling we normally do which is important because
+                # tensorflow emits a LOT of datapoints
+                exp._hd_client._metric(scalar, metric.wall_time, metric.value, log=False)
+                latest_wall_time_by_scalar[scalar] = metric.wall_time
+        # Prevent infinite loop for testing purposes
+        if is_test:
+            break
+        time.sleep(1)
+    # Should never happen for now
+    exp.end()
+
+
 def run(args):
     @_monitor(args.name, api_key_getter=None, capture_io=True, api_name=API_NAME_CLI_RUN)
-    def wrapped():
+    def wrapped(exp):
         # Python detects when its connected to a pipe and buffers output.
         # Spawn the users program with the PYTHONUNBUFFERED environment
         # variable set in case they are running a Python program.
@@ -389,10 +482,10 @@ def run(args):
         # stdout/stderr respectively (which have been redirected by
         # the monitor decorator)
         def stdout_loop():
-            _connect_streams(p.stdout, sys.stdout)
+            _connect_streams(p.stdout, sys.stdout, exp)
 
         def stderr_loop():
-            _connect_streams(p.stderr, sys.stderr)
+            _connect_streams(p.stderr, sys.stderr, exp)
 
         stdout_thread = Thread(target=stdout_loop)
         stderr_thread = Thread(target=stderr_loop)
@@ -453,14 +546,17 @@ def _gen_tokens_from_stream(stream):
             buf.append(b)
 
 
-def _connect_streams(in_stream, out_stream):
+def _connect_streams(in_stream, out_stream, hd_client):
     """Connects two streams and blocks until the input stream is closed."""
+    log_parser = LogParser(hd_client)
     for data in _gen_tokens_from_stream(in_stream):
         # In PY2 data is str, in PY3 its bytes
         if PY2:
-            out_stream.write(data)
+            token = data
         else:
-            out_stream.write(data.decode("utf-8", "ignore"))
+            token = data.decode("utf-8", "ignore")
+        out_stream.write(token)
+        log_parser.handle_token(token)
 
 
 def version(args=None):
@@ -603,6 +699,12 @@ def main():
 
     keys_parser = subparsers.add_parser("version")
     keys_parser.set_defaults(func=version)
+
+    tensorboard_parser = subparsers.add_parser("tensorboard")
+    tensorboard_parser.add_argument("--name", "-name", "--n", "-n", required=True)
+    tensorboard_parser.add_argument("--logdir", "-logdir", required=True)
+    tensorboard_parser.add_argument("--backfill", "-backfill", required=False, action='store_true')
+    tensorboard_parser.set_defaults(func=tensorboard)
 
     args = parser.parse_args()
     args.func(args)

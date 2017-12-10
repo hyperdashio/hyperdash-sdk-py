@@ -12,3 +12,7 @@ keras==2.1.1
 np_utils==0.5.3.4
 # Required for Keras
 tensorflow==1.4.0
+# Required for tensorboard integration
+tensorboard==1.0.0a6
+# Required for tensorboard integration
+tensorflow-tensorboard==0.4.0rc3
