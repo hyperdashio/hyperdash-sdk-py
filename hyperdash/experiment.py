@@ -11,6 +11,7 @@ from six.moves.queue import Queue
 
 from .client import HDClient
 from .constants import API_NAME_EXPERIMENT
+from .constants import API_NAME_CLI_TENSORBOARD
 from .monitor import monitor
 from .io_buffer import IOBuffer
 from .server_manager import ServerManagerHTTP
@@ -70,6 +71,8 @@ class Experiment:
       exp = Experiment("MNIST")
       exp.param("batch size", 32)
     """
+    _api_name = API_NAME_EXPERIMENT
+
     def __init__(
         self,
         model_name,
@@ -102,7 +105,7 @@ class Experiment:
             # Redirect STDOUT/STDERR to buffers
             sys.stdout, sys.stderr = out
 
-        server_manager = ServerManagerHTTP(api_key_getter, self._logger, API_NAME_EXPERIMENT)
+        server_manager = ServerManagerHTTP(api_key_getter, self._logger, self._api_name)
         self._hd_client = HDClient(self._logger, server_manager, current_sdk_run_uuid)
         self._hd = HyperDash(
             model_name,
@@ -143,7 +146,7 @@ class Experiment:
         if self._ended:
             self._logger.warn("Cannot iterate, experiment ended. Please start a new experiment.")
             return
-        return self._hd_client.iter(n,log)
+        return self._hd_client.iter(n, log)
 
     def end(self):
         if self._ended:
@@ -154,8 +157,8 @@ class Experiment:
             sys.stdout, sys.stderr = self._old_out, self._old_err
             self._experiment_runner.exit_cleanly = True
             self._experiment_runner.done = True
-            # Makes sure the experiment runner has cleaned up fully 
-    
+
+        # Makes sure the experiment runner has cleaned up fully    
         self.done_chan.get(block=True, timeout=None)
     """
     For selective logging while capture_io is disabled
@@ -169,7 +172,7 @@ class Experiment:
 
 class Callbacks:
     """Callbacks is a container class for 3rd-party library callbacks.
-    
+   
     An instance of Experiment is injected so that the callbacks can emit
     metrics/logs/parameters on behalf of an experiment.
     """
@@ -190,7 +193,7 @@ class Callbacks:
         """
         cb = self._callbacks.get(KERAS)
         # Keras is not importable
-        if cb == False:
+        if cb is False:
             return None
         # If this is the first time, try and import Keras
         if not cb:
@@ -211,7 +214,9 @@ class Callbacks:
                         super(_KerasCallback, self).__init__()
                         self._exp = exp
                     
-                    def on_epoch_end(self, epoch, logs={}):
+                    def on_epoch_end(self, epoch, logs=None):
+                        if not logs:
+                            logs = {}
                         val_acc = logs.get("val_acc")
                         val_loss = logs.get("val_loss")
 
@@ -227,3 +232,11 @@ class Callbacks:
                 self._callbacks[KERAS] = False
                 return None
         return cb
+
+
+# Version of Experiment with a different name for use internally, should not be used directly by consumers
+class _TensorboardExperiment(Experiment):
+    _api_name = API_NAME_CLI_TENSORBOARD
+
+    def __init__(self, *args, **kwargs):
+        Experiment.__init__(self, *args, **kwargs)

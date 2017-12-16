@@ -11,12 +11,17 @@ TYPE_METRIC = 'metric'
 TYPE_PARAM = 'param'
 
 
-def create_metric_message(sdk_run_uuid, name, value, is_internal):
+def create_metric_message(sdk_run_uuid, name, timestamp, value, is_internal):
     return create_sdk_message(
         sdk_run_uuid,
         TYPE_METRIC,
         {
             'name': name,
+            # This timestamp is separate from the timestamp that is associated with each SDK
+            # message as this one represents when the metric was emitted, not when the message
+            # was constructed (can be different I.E in the case where we're parsing stale
+            # tensorboard files)
+            'timestamp': int(timestamp * 1000),
             'value': value,
             'is_internal': is_internal,
         }

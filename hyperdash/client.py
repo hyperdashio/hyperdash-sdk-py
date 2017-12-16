@@ -29,9 +29,11 @@ class HDClient:
         Optional log parameter controls whether the metric is
         logged / printed to STDOUT.
         """
-        return self._metric(name, value, log, False)
+        return self._metric(name, time.time(), value, log, False)
 
-    def _metric(self, name, value, log=True, is_internal=False, sample_frequency_per_second=1):
+    # This is gross, but be careful when modifying this functions signature as its used by the
+    # CLI in the tensorboard command.
+    def _metric(self, name, current_time, value, log=True, is_internal=False, sample_frequency_per_second=1):
         assert isinstance(value, numbers.Real), "value must be a real number."
         assert isinstance(name, six.string_types)
         assert isinstance(sample_frequency_per_second, numbers.Real), "sample_frequency_per_second must be a real number."
@@ -40,14 +42,13 @@ class HDClient:
         # constraint (like numpy numbers) are not JSON serializable unless converted.
         value = float(value)
 
-        current_time = time.time()
         last_seen_at = self._last_seen_metrics.get(name, None)
         if last_seen_at and (current_time - last_seen_at < (1.0/float(sample_frequency_per_second))):
             # Not enough time has elapsed since the last time this metric was emitted
             return
 
         message = create_metric_message(
-            self._sdk_run_uuid, name, value, is_internal)
+            self._sdk_run_uuid, name, current_time, value, is_internal)
         self._server_manager.put_buf(message)
         self._last_seen_metrics[name] = current_time
         if log:
@@ -101,8 +102,8 @@ class HDClient:
         while i < n:
             if log:
                 self.logger.info("| Iteration {} of {} |".format(i, n - 1))
-            self._metric("hd_iter_{}".format(iter_num),
-                         i, log=False, is_internal=True)
+            self._metric(
+                "hd_iter_{}".format(iter_num), time.time(), i, log=False, is_internal=True)
             yield i
             i += 1
 

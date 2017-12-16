@@ -284,7 +284,9 @@ class TestSDK(object):
             {"is_internal": False, "name": "mse", "value": -433.321}
         ]
         for i, message in enumerate(sent_vals):
-            assert message == expected_metrics[i]
+            assert message["is_internal"] == expected_metrics[i]["is_internal"]
+            assert message["name"] == expected_metrics[i]["name"]
+            assert message["value"] == expected_metrics[i]["value"]
 
     def test_param(self):
         params = (("lr", 0.5), ("loss_function", "MSE"))
@@ -373,7 +375,9 @@ class TestSDK(object):
        ]
         assert len(expect_metrics) == len(metrics_messages)
         for i, message in enumerate(metrics_messages):
-            assert message == expect_metrics[i]
+            assert message["is_internal"] == expect_metrics[i]["is_internal"]
+            assert message["name"] == expect_metrics[i]["name"]
+            assert message["value"] == expect_metrics[i]["value"]
         
         captured_out = faked_out.getvalue()
         assert "error" not in captured_out
@@ -426,7 +430,9 @@ class TestSDK(object):
         ]
         assert len(expect_metrics) == len(metrics_messages)
         for i, message in enumerate(metrics_messages):
-            assert message == expect_metrics[i]
+            assert message["is_internal"] == expect_metrics[i]["is_internal"]
+            assert message["name"] == expect_metrics[i]["name"]
+            assert message["value"] == expect_metrics[i]["value"]
         
         captured_out = faked_out.getvalue()
         assert "error" not in captured_out
@@ -474,8 +480,6 @@ class TestSDK(object):
 
         assert len(expected_params) == len(params_messages)
         for i, message in enumerate(params_messages):
-            print(message)
-            print(expected_params[i])
             assert message == expected_params[i]
 
         # Test metrics match what is expected
@@ -495,7 +499,9 @@ class TestSDK(object):
 
         assert len(expected_metrics) == len(metrics_messages)
         for i, message in enumerate(metrics_messages):
-            assert message == expected_metrics[i]
+            assert message["is_internal"] == expected_metrics[i]["is_internal"]
+            assert message["name"] == expected_metrics[i]["name"]
+            assert message["value"] == expected_metrics[i]["value"]
         
     def experiment_raises_exceptions(self):
         exception_raised = True
@@ -591,7 +597,9 @@ class TestSDK(object):
         # print(len(expected_metrics), len(metric_messages))
         assert len(expected_metrics) == len(metric_messages)
         for i, message in enumerate(metric_messages):
-            assert message == expected_metrics[i]
+            assert message["is_internal"] == expected_metrics[i]["is_internal"]
+            assert message["name"] == expected_metrics[i]["name"]
+            assert message["value"] == expected_metrics[i]["value"]
 
         # Assert that the internal parameters / metrics were not printed to STDOUT
         assert "hd_iter_0" not in fake_out.getvalue()
