@@ -406,7 +406,7 @@ def tensorboard(args=None, is_test=False):
 
     tags = accumulator.Tags()
     if 'scalars' not in tags:
-        print("Auto-detected most recent run is `{}`, but no metrics were detected".format(latest_run)
+        print("Auto-detected most recent run is `{}`, but no metrics were detected".format(latest_run))
   
     scalars = tags['scalars']
     scalars_str = ', '.join(scalars)
