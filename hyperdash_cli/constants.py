@@ -5,7 +5,7 @@ import six
 
 GITHUB_OAUTH_START = "oauth/github/start"
 
-ONE_YEAR_IN_SECONDS = 365 * 24 * 60 * 60
+THREADING_TIMEOUT_MAX = 4294967  # Maximum allowed threading.TIMEOUT_MAX in Python 3.6
 
 LOOPBACK = "127.0.0.1"
 

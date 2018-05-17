@@ -34,7 +34,7 @@ from hyperdash.monitor import _monitor
 from .constants import get_base_url
 from .constants import get_base_http_url
 from .constants import GITHUB_OAUTH_START
-from .constants import ONE_YEAR_IN_SECONDS
+from .constants import THREADING_TIMEOUT_MAX
 from .constants import LOOPBACK
 
 
@@ -231,10 +231,10 @@ def github(args=None):
     # user's browser to prevent a race condition where the Hyperdash server
     # redirects with an access token but the Python server isn't ready yet.
     # 
-    # Also, we set the timeout to ONE_YEAR_IN_SECONDS because without a timeout,
+    # Also, we set the timeout to THREADING_TIMEOUT_MAX because without a timeout,
     # the .get() call on the queue can not be interrupted with CTRL+C.
-    server_started_queue.get(block=True, timeout=ONE_YEAR_IN_SECONDS)
-    manual_entry_thread_started_queue.get(block=True, timeout=ONE_YEAR_IN_SECONDS)
+    server_started_queue.get(block=True, timeout=THREADING_TIMEOUT_MAX)
+    manual_entry_thread_started_queue.get(block=True, timeout=THREADING_TIMEOUT_MAX)
     # Blocks until browser opens, but doesn't wait for user to close it
     webbrowser.open_new_tab(auto_login_url)
 
@@ -242,7 +242,7 @@ def github(args=None):
     # Wait for the Hyperdash server to redirect with the access token to our embedded
     # server, or for the user to manually enter an access token. Whichever happens
     # first.
-    access_token = access_token_queue.get(block=True, timeout=ONE_YEAR_IN_SECONDS)
+    access_token = access_token_queue.get(block=True, timeout=THREADING_TIMEOUT_MAX)
     # Use the access token to retrieve the user's API key and store a valid
     # hyperdash.json file
     success, default_api_key = _after_access_token_login(access_token)
