@@ -131,8 +131,7 @@ class TestSDK(object):
 
         # Make sure correct API name / version headers are sent
         assert server_sdk_headers[0][API_KEY_NAME] == API_NAME_MONITOR
-        assert server_sdk_headers[0][VERSION_KEY_NAME] == get_hyperdash_version(
-        )
+        assert server_sdk_headers[0][VERSION_KEY_NAME] == get_hyperdash_version()
 
     def test_monitor_raises_exceptions(self):
         exception_raised = True
@@ -277,13 +276,11 @@ class TestSDK(object):
         expected_metrics = [
             {"is_internal": False, "name": "acc", "value": 99.0},
             {"is_internal": False, "name": "loss", "value": 0.00000000041},
-            {"is_internal": False, "name": "val_loss",
-                "value": 4324320984309284328743827432.0},
+            {"is_internal": False, "name": "val_loss", "value": 4324320984309284328743827432.0},
             {"is_internal": False, "name": "mse", "value": -431.321},
             {"is_internal": False, "name": "acc", "value": 97.0},
             {"is_internal": False, "name": "loss", "value": -1.99999999959},
-            {"is_internal": False, "name": "val_loss",
-                "value": 4324320984309284328743827430.0},
+            {"is_internal": False, "name": "val_loss", "value": 4324320984309284328743827430.0},
             {"is_internal": False, "name": "mse", "value": -433.321}
         ]
         for i, message in enumerate(sent_vals):
@@ -387,8 +384,7 @@ class TestSDK(object):
 
         # Make sure correct API name / version headers are sent
         assert server_sdk_headers[0][API_KEY_NAME] == API_NAME_EXPERIMENT
-        assert server_sdk_headers[0][VERSION_KEY_NAME] == get_hyperdash_version(
-        )
+        assert server_sdk_headers[0][VERSION_KEY_NAME] == get_hyperdash_version()
 
         # Make sure logs were persisted
         expect_logs = [

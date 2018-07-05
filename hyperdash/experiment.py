@@ -1,9 +1,11 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import numpy as np
 import sys
 import uuid
 import threading
+
+import numpy as np
+
 from threading import Lock
 
 from datetime import datetime
