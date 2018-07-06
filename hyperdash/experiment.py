@@ -220,7 +220,8 @@ class Callbacks:
                     def on_epoch_end(self, epoch, logs=None):
                         if not logs:
                             logs = {}
-                        for k, v in logs.items():
+                        # for <python 36
+                        for k, v in sorted(logs.items()):
                             if isinstance(v, (np.ndarray, np.generic)):
                                 self._exp.metric(k, v.item())
                             else:

@@ -423,12 +423,12 @@ class TestSDK(object):
             if "name" in payload:
                 metrics_messages.append(payload)
         expect_metrics = [
+            {"is_internal": False, "name": "any_metrics", "value": 10},
             {"is_internal": False, "name": "val_acc", "value": 1},
             {"is_internal": False, "name": "val_loss", "value": 2},
-            {"is_internal": False, "name": "any_metrics", "value": 10},
+            {"is_internal": False, "name": "any_metrics", "value": 20},
             {"is_internal": False, "name": "val_acc", "value": 3},
             {"is_internal": False, "name": "val_loss", "value": 4},
-            {"is_internal": False, "name": "any_metrics", "value": 20},
         ]
         assert len(expect_metrics) == len(metrics_messages)
         for i, message in enumerate(metrics_messages):
