@@ -117,7 +117,7 @@ def train_dogs_vs_cats(exp): # Get Experiment object as argument to function.
   lr = exp.param("learning rate", 0.005)
   model = Model(lr)
   model.fit()
-  exp.metric(model.accuracy())
+  exp.metric("accuracy", model.accuracy())
 ```
 ## API Keys
 ### Storage
