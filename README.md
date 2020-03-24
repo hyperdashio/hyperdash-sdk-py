@@ -119,6 +119,18 @@ def train_dogs_vs_cats(exp): # Get Experiment object as argument to function.
   model.fit()
   exp.metric(model.accuracy())
 ```
+
+## Tensorboard auto-instrumentation.
+If you use Tensorboard for monitoring, Hyperdash can monitor the same `tfevents` files. Simply point the Hyperdash SDK to your log directory. For example if you start tensorboard in Terminal like this:
+```bash
+tensorboard --logdir=/tmp/tensorflow_logs
+```
+You would run in a seperate terminal tab:
+```bash
+hd tensorboard -n ModelNameHere --logdir=/tmp/tensorflow_logs
+```
+Then Hyperdash will automatically categorize all future tensorflow runs in the same directory under the same model name. You'll even get push notifications and real-time metrics!
+
 ## API Keys
 ### Storage
 
