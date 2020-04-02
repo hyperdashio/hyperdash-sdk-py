@@ -334,7 +334,7 @@ class TestSDK(object):
                 exp.metric("accuracy", i*0.2)
             time.sleep(0.1)
             exp.end()
-        
+
         # Test params match what is expected
         params_messages = []
         for msg in server_sdk_messages:
@@ -355,7 +355,7 @@ class TestSDK(object):
                 },
                 "is_internal": True,
             },
-        ]    
+        ]
         assert len(expect_params) == len(params_messages)
         for i, message in enumerate(params_messages):
             assert message == expect_params[i]
@@ -372,20 +372,20 @@ class TestSDK(object):
             {"is_internal": False, "name": "accuracy", "value": 0},
             {"is_internal": True, "name": "hd_iter_0", "value": 1},
             {"is_internal": False, "name": "accuracy", "value": 0.2},
-       ]
+        ]
         assert len(expect_metrics) == len(metrics_messages)
         for i, message in enumerate(metrics_messages):
             assert message["is_internal"] == expect_metrics[i]["is_internal"]
             assert message["name"] == expect_metrics[i]["name"]
             assert message["value"] == expect_metrics[i]["value"]
-        
+
         captured_out = faked_out.getvalue()
         assert "error" not in captured_out
 
         # Make sure correct API name / version headers are sent
         assert server_sdk_headers[0][API_KEY_NAME] == API_NAME_EXPERIMENT
         assert server_sdk_headers[0][VERSION_KEY_NAME] == get_hyperdash_version()
-        
+
         # Make sure logs were persisted
         expect_logs = [
             "{ batch size: 32 }",
@@ -410,10 +410,10 @@ class TestSDK(object):
         with patch("sys.stdout", new=StringIO()) as faked_out:
             exp = Experiment("MNIST")
             keras_cb = exp.callbacks.keras
-            keras_cb.on_epoch_end(0, {"val_acc": 1, "val_loss": 2})
+            keras_cb.on_epoch_end(0, {"val_acc": 1, "val_loss": 2, "any_metrics": 10})
             # Sleep 1 second due to client sampling
             time.sleep(1)
-            keras_cb.on_epoch_end(1, {"val_acc": 3, "val_loss": 4})
+            keras_cb.on_epoch_end(1, {"val_acc": 3, "val_loss": 4, "any_metrics": 20})
             exp.end()
 
         # Test metrics match what is expected
@@ -423,8 +423,10 @@ class TestSDK(object):
             if "name" in payload:
                 metrics_messages.append(payload)
         expect_metrics = [
+            {"is_internal": False, "name": "any_metrics", "value": 10},
             {"is_internal": False, "name": "val_acc", "value": 1},
             {"is_internal": False, "name": "val_loss", "value": 2},
+            {"is_internal": False, "name": "any_metrics", "value": 20},
             {"is_internal": False, "name": "val_acc", "value": 3},
             {"is_internal": False, "name": "val_loss", "value": 4},
         ]
@@ -433,7 +435,7 @@ class TestSDK(object):
             assert message["is_internal"] == expect_metrics[i]["is_internal"]
             assert message["name"] == expect_metrics[i]["name"]
             assert message["value"] == expect_metrics[i]["value"]
-        
+
         captured_out = faked_out.getvalue()
         assert "error" not in captured_out
 
@@ -460,7 +462,7 @@ class TestSDK(object):
             exp.metric("test_metric_{}".format(name), num)
             exp.param("test_param_{}".format(name), num)
         exp.end()
-        
+
         # Test params match what is expected
         params_messages = []
         for msg in server_sdk_messages:
@@ -502,7 +504,7 @@ class TestSDK(object):
             assert message["is_internal"] == expected_metrics[i]["is_internal"]
             assert message["name"] == expected_metrics[i]["name"]
             assert message["value"] == expected_metrics[i]["value"]
-        
+
     def experiment_raises_exceptions(self):
         exception_raised = True
         expected_exception = "some_exception_b"

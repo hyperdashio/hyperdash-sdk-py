@@ -3,6 +3,9 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import sys
 import uuid
 import threading
+
+import numpy as np
+
 from threading import Lock
 
 from datetime import datetime
@@ -217,13 +220,13 @@ class Callbacks:
                     def on_epoch_end(self, epoch, logs=None):
                         if not logs:
                             logs = {}
-                        val_acc = logs.get("val_acc")
-                        val_loss = logs.get("val_loss")
+                        # for <python 36
+                        for k, v in sorted(logs.items()):
+                            if isinstance(v, (np.ndarray, np.generic)):
+                                self._exp.metric(k, v.item())
+                            else:
+                                self._exp.metric(k, v)
 
-                        if val_acc is not None:
-                            self._exp.metric("val_acc", val_acc)
-                        if val_loss is not None:
-                            self._exp.metric("val_loss", val_loss)
                 cb = _KerasCallback(self._exp)
                 self._callbacks[KERAS] = cb
                 return cb
