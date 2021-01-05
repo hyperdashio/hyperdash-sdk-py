@@ -217,11 +217,11 @@ class Callbacks:
                     def on_epoch_end(self, epoch, logs=None):
                         if not logs:
                             logs = {}
-                        val_acc = logs.get("val_acc")
+                        val_acc = logs.get("val_accuracy")
                         val_loss = logs.get("val_loss")
 
                         if val_acc is not None:
-                            self._exp.metric("val_acc", val_acc)
+                            self._exp.metric("val_accuracy", val_acc)
                         if val_loss is not None:
                             self._exp.metric("val_loss", val_loss)
                 cb = _KerasCallback(self._exp)
