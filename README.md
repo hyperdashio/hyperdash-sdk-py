@@ -12,7 +12,7 @@ Use Hyperdash if you're looking for cloud-based model monitoring that:
 * Saves your experiment's print output (standard out / error) as a local log file.
 * Notifies you when a long-running experiment has finished.
 
-Hyperdash is compatible with: **Python 2.7-3.6**
+Hyperdash is compatible with: **Python 2.7-3.8**
 
 ## Installation
 *Foreword: We care deeply about making Hyperdash fast and easy to install  on Linux, Mac, and Windows. If you find a snag along the way, please let us know at support@hyperdash.io!*
