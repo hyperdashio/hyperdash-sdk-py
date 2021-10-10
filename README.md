@@ -12,7 +12,7 @@ Use Hyperdash if you're looking for cloud-based model monitoring that:
 * Saves your experiment's print output (standard out / error) as a local log file.
 * Notifies you when a long-running experiment has finished.
 
-Hyperdash is compatible with: **Python 2.7-3.6**
+Hyperdash is compatible with: **Python 2.7-3.8**
 
 ## Installation
 *Foreword: We care deeply about making Hyperdash fast and easy to install  on Linux, Mac, and Windows. If you find a snag along the way, please let us know at support@hyperdash.io!*
@@ -119,6 +119,55 @@ def train_dogs_vs_cats(exp): # Get Experiment object as argument to function.
   model.fit()
   exp.metric(model.accuracy())
 ```
+
+
+### Keras Callbacks
+
+Hyperdash has an included keras callback module:
+```python
+from hyperdash import Experiment
+exp = Experiment ("Keras callback showcase")
+
+callbacks=[exp.callbacks.keras]
+
+history = training_model.fit(train_dataset, 
+                                 epochs=epochs, 
+                                 callbacks=callbacks,
+                                 validation_data=validation_dataset,
+                                 validation_steps=steps
+                                )
+```
+This callback will monitor validation loss (val_loss) and the validation accuracy (val_acc).
+
+If you want to monitor other metrics, you will have to define a callback yourself:
+```python
+from hyperdash import Experiment
+from tensorflow.keras.callbacks import Callback
+
+class Hyperdash(Callback):
+    def __init__(self, entries, exp):
+        super(Hyperdash, self).__init__()
+        self.entries = entries
+        self.exp = exp
+    def on_epoch_end(self, epoch, logs=None):
+        for entrie in self.entries:
+            log = logs.get(entrie)
+            if log is not None:
+                self.exp.metric(entrie, log)
+
+callback_hd = Hyperdash(['accuracy', 'loss', 'val_accuracy', 'val_loss'], exp) # Here you list the metrics you want to track
+
+callbacks = [callback_hd]
+
+history = training_model.fit(train_dataset, 
+                             epochs=epochs, 
+                             callbacks=callbacks,
+                             validation_data=validation_dataset,
+                             validation_steps=steps
+                            )
+```
+
+
 ## API Keys
 ### Storage
 
